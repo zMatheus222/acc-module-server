@@ -1,0 +1,58 @@
+[
+    {
+        "message": "==ERR:",
+        "type": "ignore"
+    },
+    {
+        "message": "maxCarSlots \\d+ exceeds the allowed slots by Rating requirement (\\d+). Add Track Medal and Safety Rating Requirements to gain up to",
+        "type": "warning"
+    },
+    {
+        "message": "\\d+ client(s) online",
+        "type": "info"
+    },
+    {
+        "message": "New connection request: id \\d+ [\\w\\s]+ S\\d+ on car model \\d+",
+        "type": "info"
+    },
+    {
+        "message": "Creating new car connection: carId \\d+, carModel \\d+, raceNumber #\\d+",
+        "type": "info"
+    },
+    {
+        "message": "\\d+ Driver(s) detected, starting session",
+        "type": "info"
+    },
+    {
+        "message": "Session completed: Practice/<session completed> with \\d+ cars and \\d+ connections",
+        "type": "practice_finish"
+    },
+    {
+        "message": "Session changed: Practice -> Qualifying 0",
+        "type": "practice_finish"
+    },
+    {
+        "message": "Session over, waiting \\d+ postQualySeconds",
+        "type": "qualy_finish"
+    },
+    {
+        "message": "Session changed: Qualifying -> Race 0",
+        "type": "qualy_finish"
+    },
+    {
+        "message": "Detected sessionPhase <session overtime> -> <session completed> (Race)",
+        "type": "race_finish"
+    },
+    {
+        "message": "Session completed: Race/<session completed> with \\d+ cars and \\d+ connections",
+        "type": "race_finish"
+    },
+    {
+        "message": "Session over, waiting \\d+ postRaceSeconds",
+        "type": "race_finish"
+    },
+    {
+        "message": "Resetting race weekend",
+        "type": "race_finish"
+    }
+]

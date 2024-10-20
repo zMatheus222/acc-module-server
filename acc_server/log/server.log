@@ -1,0 +1,238 @@
+0: Server starting with version 256
+0: Starting server ACC JS test
+0: ==ERR: preRaceWaitingTimeSeconds (30) has been set to 80s, 2061243456 seconds are too low for public Multiplayer
+0: allowAutoDQ is set to false, but is a public server. Will use auto DQs!
+0: Joining during race is allowed
+0: FileToStruct cfg/eventRules.json
+0: maxCarSlots 30 exceeds the allowed slots by Rating requirement (10). Add Track Medal and Safety Rating Requirements to gain up to 30 slots (3 TM + 70 SA)
+0: Translated realtime interval hzToMiliseconds(18)=54
+
+0: SessionManager::randomizeGreenFlagTriggers: s:0.890000 e:0.950000 r:0.896607
+0: Track barcelona was set and updated
+0: Event changed
+0: ==ERR: Ignoring special event rules for public Multiplayer
+0: ==ERR: Ignoring special assist rules for public Multiplayer
+0: SessionManager::randomizeGreenFlagTriggers: s:0.890000 e:0.950000 r:0.907524
+0: Significant change detected, updating lobby (1|1)
+0: maxCarSlots 30 exceeds the allowed slots by Rating requirement (10). Add Track Medal and Safety Rating Requirements to gain up to 30 slots (3 TM + 70 SA)
+0: Resetting weekend to friday night
+0: Reset time to friday night: 0 -> 0
+0: Reset time to first session: 0 -> 122400
+0: SessionManager::randomizeGreenFlagTriggers: s:0.890000 e:0.950000 r:0.948586
+0: Listening to TCP 9601 | UDP 9601
+296: Trying to connect to lobby (0 times, interval 10000 s)
+296: Session changed: Practice -> Practice 0
+296: Detected sessionPhase <waiting for drivers> -> <waiting for drivers> (Practice)
+18989: Replied to network discovery request
+20491: New connection received 336
+20491: 1 client(s) online
+20491: TCPQueue now: 458
+20491: New TCP incoming pakSizeMax, 0 => 456
+20491: Located entryListId -1 for connection 0 S76561198163723827
+20491: New connection request: id 0 Matheus Samuel S76561198163723827 on car model 7
+20491: Creating new car connection: carId 1001, carModel 7, raceNumber #42
+20491: Special Rules for carid 1001: 
+	max_total_driving_time is -1 (from -1), pitCount -1
+20491: startingTime is not set?
+20491: Starting stint for car 1001 driver 0 at 20491.657300
+20491: Assigning gridNumber 1 to new carId 1001
+20491: Sent handshake response for car 1001 connection 0 with 1304 bytes
+20491: 1 Driver(s) detected, starting session
+20491: SessionManager::randomizeGreenFlagTriggers: s:0.983808 e:0.999999 r:0.992933
+20491: Detected sessionPhase <waiting for drivers> -> <pre session> (Practice)
+20491: Updated leaderboard for 1 clients (Practice-<pre session> 1 min)
+21330: ==ERR: RegisterToLobby TCP connection failed, couldn't connect to the lobby server
+21346: Trying to connect to lobby (1 times, interval 11000 s)
+22496: RegisterToLobby succeeded
+22511: Sent lobby registration request for barcelona
+22683: TCPQueue now: 4
+22683: New TCP incoming pakSizeMax, 0 => 2
+22683: Updated lobby with 1 drivers
+23319: Associated: connId 0, now 23319
+23351: Reset time offset for connection 0, new offset 23315, diff 2824
+23504: Detected sessionPhase <session> -> <session> (Practice)
+23504: Sent session update to lobby
+23643: Receives driver stint reset for car 1001
+23643: Ending stint: new total time for car 1001 driver 0 is 2903.342700
+23643: List of Stints for car 1001 driver 0
+23643: Stint 1 car 1001 driver 0 started 20491.657300 ended 23395.000000
+23736: Receives driver stint reset for car 1001
+23736: startingTime is not set?
+23767: Updated 0 clients with new carSystem for car 1001 (0l)
+23860: Updated 0 clients with new carSystem for car 1001 (16l)
+27220: ==ERR: onCarUpdate (1001): timestamp is 5 ms in the future: 27226 (now: 27220 offset: 23316)
+30027: ==ERR: onCarUpdate (1001): timestamp is 5 ms in the future: 30033 (now: 30027 offset: 23316)
+31053: ==ERR: onCarUpdate (1001): timestamp is 5 ms in the future: 31059 (now: 31053 offset: 23317)
+31487: ==ERR: onCarUpdate (1001): timestamp is 5 ms in the future: 31493 (now: 31487 offset: 23318)
+31703: ==ERR: onCarUpdate (1001): timestamp is 6 ms in the future: 31710 (now: 31703 offset: 23318)
+31810: ==ERR: onCarUpdate (1001): timestamp is 7 ms in the future: 31818 (now: 31810 offset: 23318)
+31917: ==ERR: onCarUpdate (1001): timestamp is 7 ms in the future: 31925 (now: 31917 offset: 23318)
+32027: ==ERR: onCarUpdate (1001): timestamp is 5 ms in the future: 32033 (now: 32027 offset: 23318)
+32134: ==ERR: onCarUpdate (1001): timestamp is 5 ms in the future: 32140 (now: 32134 offset: 23318)
+32244: ==ERR: onCarUpdate (1001): timestamp is 5 ms in the future: 32250 (now: 32244 offset: 23318)
+32727: ==ERR: onCarUpdate (1001): timestamp is 6 ms in the future: 32734 (now: 32727 offset: 23317)
+32836: ==ERR: onCarUpdate (1001): timestamp is 5 ms in the future: 32842 (now: 32836 offset: 23317)
+33159: ==ERR: onCarUpdate (1001): timestamp is 7 ms in the future: 33167 (now: 33159 offset: 23317)
+33267: ==ERR: onCarUpdate (1001): timestamp is 6 ms in the future: 33274 (now: 33267 offset: 23317)
+34832: ==ERR: onCarUpdate (1001): timestamp is 5 ms in the future: 34838 (now: 34832 offset: 23316)
+35265: ==ERR: onCarUpdate (1001): timestamp is 5 ms in the future: 35271 (now: 35265 offset: 23316)
+35590: ==ERR: onCarUpdate (1001): timestamp is 5 ms in the future: 35596 (now: 35590 offset: 23316)
+38884: ==ERR: onCarUpdate (1001): timestamp is 5 ms in the future: 38890 (now: 38884 offset: 23318)
+38992: ==ERR: onCarUpdate (1001): timestamp is 7 ms in the future: 39000 (now: 38992 offset: 23318)
+39102: ==ERR: onCarUpdate (1001): timestamp is 5 ms in the future: 39108 (now: 39102 offset: 23318)
+39692: ==ERR: onCarUpdate (1001): timestamp is 7 ms in the future: 39700 (now: 39692 offset: 23318)
+39910: ==ERR: onCarUpdate (1001): timestamp is 7 ms in the future: 39918 (now: 39910 offset: 23318)
+40720: ==ERR: onCarUpdate (1001): timestamp is 7 ms in the future: 40728 (now: 40720 offset: 23318)
+41313: ==ERR: onCarUpdate (1001): timestamp is 6 ms in the future: 41320 (now: 41313 offset: 23318)
+41746: ==ERR: onCarUpdate (1001): timestamp is 5 ms in the future: 41752 (now: 41746 offset: 23317)
+43365: ==ERR: onCarUpdate (1001): timestamp is 5 ms in the future: 43371 (now: 43365 offset: 23316)
+43582: ==ERR: onCarUpdate (1001): timestamp is 5 ms in the future: 43588 (now: 43582 offset: 23316)
+44607: ==ERR: onCarUpdate (1001): timestamp is 6 ms in the future: 44614 (now: 44607 offset: 23317)
+44715: ==ERR: onCarUpdate (1001): timestamp is 6 ms in the future: 44722 (now: 44715 offset: 23317)
+45742: ==ERR: onCarUpdate (1001): timestamp is 5 ms in the future: 45748 (now: 45742 offset: 23316)
+45850: ==ERR: onCarUpdate (1001): timestamp is 5 ms in the future: 45856 (now: 45850 offset: 23316)
+46552: ==ERR: onCarUpdate (1001): timestamp is 5 ms in the future: 46558 (now: 46552 offset: 23316)
+46662: ==ERR: onCarUpdate (1001): timestamp is 5 ms in the future: 46668 (now: 46662 offset: 23318)
+46769: ==ERR: onCarUpdate (1001): timestamp is 5 ms in the future: 46775 (now: 46769 offset: 23318)
+46875: ==ERR: onCarUpdate (1001): timestamp is 7 ms in the future: 46883 (now: 46875 offset: 23318)
+46983: ==ERR: onCarUpdate (1001): timestamp is 6 ms in the future: 46990 (now: 46983 offset: 23318)
+47201: ==ERR: onCarUpdate (1001): timestamp is 6 ms in the future: 47208 (now: 47201 offset: 23318)
+47309: ==ERR: onCarUpdate (1001): timestamp is 5 ms in the future: 47315 (now: 47309 offset: 23318)
+47417: ==ERR: onCarUpdate (1001): timestamp is 5 ms in the future: 47423 (now: 47417 offset: 23318)
+47522: ==ERR: onCarUpdate (1001): timestamp is 7 ms in the future: 47530 (now: 47522 offset: 23318)
+49630: ==ERR: onCarUpdate (1001): timestamp is 5 ms in the future: 49636 (now: 49630 offset: 23316)
+50603: ==ERR: onCarUpdate (1001): timestamp is 5 ms in the future: 50609 (now: 50603 offset: 23317)
+50711: ==ERR: onCarUpdate (1001): timestamp is 5 ms in the future: 50717 (now: 50711 offset: 23317)
+52169: ==ERR: onCarUpdate (1001): timestamp is 5 ms in the future: 52175 (now: 52169 offset: 23318)
+52277: ==ERR: onCarUpdate (1001): timestamp is 5 ms in the future: 52283 (now: 52277 offset: 23318)
+52493: ==ERR: onCarUpdate (1001): timestamp is 6 ms in the future: 52500 (now: 52493 offset: 23318)
+53085: ==ERR: onCarUpdate (1001): timestamp is 6 ms in the future: 53092 (now: 53085 offset: 23317)
+53193: ==ERR: onCarUpdate (1001): timestamp is 5 ms in the future: 53199 (now: 53193 offset: 23317)
+53303: ==ERR: onCarUpdate (1001): timestamp is 5 ms in the future: 53309 (now: 53303 offset: 23317)
+54812: ==ERR: onCarUpdate (1001): timestamp is 5 ms in the future: 54818 (now: 54812 offset: 23316)
+55029: ==ERR: onCarUpdate (1001): timestamp is 6 ms in the future: 55036 (now: 55029 offset: 23316)
+55462: ==ERR: onCarUpdate (1001): timestamp is 5 ms in the future: 55468 (now: 55462 offset: 23316)
+55570: ==ERR: onCarUpdate (1001): timestamp is 5 ms in the future: 55576 (now: 55570 offset: 23316)
+55786: ==ERR: onCarUpdate (1001): timestamp is 5 ms in the future: 55792 (now: 55786 offset: 23317)
+55892: ==ERR: onCarUpdate (1001): timestamp is 6 ms in the future: 55899 (now: 55892 offset: 23317)
+56110: ==ERR: onCarUpdate (1001): timestamp is 6 ms in the future: 56117 (now: 56110 offset: 23317)
+56218: ==ERR: onCarUpdate (1001): timestamp is 5 ms in the future: 56224 (now: 56218 offset: 23317)
+57567: ==ERR: onCarUpdate (1001): timestamp is 6 ms in the future: 57574 (now: 57567 offset: 23317)
+57675: ==ERR: onCarUpdate (1001): timestamp is 5 ms in the future: 57681 (now: 57675 offset: 23316)
+58484: ==ERR: onCarUpdate (1001): timestamp is 6 ms in the future: 58491 (now: 58484 offset: 23316)
+59727: ==ERR: onCarUpdate (1001): timestamp is 6 ms in the future: 59734 (now: 59727 offset: 23317)
+60212: ==ERR: onCarUpdate (1001): timestamp is 6 ms in the future: 60219 (now: 60212 offset: 23317)
+60490: Tcp message count (1 clients): 46=2, 50=1, 61=1, 79=2, 
+60490: Udp message count (1 clients): 19=1, 22=37, 30=686, 
+61725: ==ERR: onCarUpdate (1001): timestamp is 7 ms in the future: 61733 (now: 61725 offset: 23318)
+61833: ==ERR: onCarUpdate (1001): timestamp is 6 ms in the future: 61840 (now: 61833 offset: 23318)
+61943: ==ERR: onCarUpdate (1001): timestamp is 6 ms in the future: 61950 (now: 61943 offset: 23318)
+62052: ==ERR: onCarUpdate (1001): timestamp is 5 ms in the future: 62058 (now: 62052 offset: 23318)
+62967: ==ERR: onCarUpdate (1001): timestamp is 5 ms in the future: 62973 (now: 62967 offset: 23316)
+63075: ==ERR: onCarUpdate (1001): timestamp is 5 ms in the future: 63081 (now: 63075 offset: 23316)
+63292: ==ERR: onCarUpdate (1001): timestamp is 5 ms in the future: 63298 (now: 63292 offset: 23316)
+63400: ==ERR: onCarUpdate (1001): timestamp is 5 ms in the future: 63406 (now: 63400 offset: 23316)
+63992: ==ERR: onCarUpdate (1001): timestamp is 6 ms in the future: 63999 (now: 63992 offset: 23317)
+64102: ==ERR: onCarUpdate (1001): timestamp is 6 ms in the future: 64109 (now: 64102 offset: 23317)
+64211: ==ERR: onCarUpdate (1001): timestamp is 5 ms in the future: 64217 (now: 64211 offset: 23317)
+64802: ==ERR: onCarUpdate (1001): timestamp is 5 ms in the future: 64808 (now: 64802 offset: 23316)
+65020: ==ERR: onCarUpdate (1001): timestamp is 5 ms in the future: 65026 (now: 65020 offset: 23316)
+66855: ==ERR: onCarUpdate (1001): timestamp is 5 ms in the future: 66861 (now: 66855 offset: 23316)
+67180: ==ERR: onCarUpdate (1001): timestamp is 5 ms in the future: 67186 (now: 67180 offset: 23316)
+67665: ==ERR: onCarUpdate (1001): timestamp is 5 ms in the future: 67671 (now: 67665 offset: 23316)
+67884: ==ERR: onCarUpdate (1001): timestamp is 5 ms in the future: 67890 (now: 67884 offset: 23318)
+68474: ==ERR: onCarUpdate (1001): timestamp is 8 ms in the future: 68483 (now: 68474 offset: 23318)
+68583: ==ERR: onCarUpdate (1001): timestamp is 6 ms in the future: 68590 (now: 68583 offset: 23318)
+71553: ==ERR: onCarUpdate (1001): timestamp is 5 ms in the future: 71559 (now: 71553 offset: 23317)
+71662: ==ERR: onCarUpdate (1001): timestamp is 6 ms in the future: 71669 (now: 71662 offset: 23317)
+72039: ==ERR: onCarUpdate (1001): timestamp is 7 ms in the future: 72047 (now: 72039 offset: 23317)
+74144: ==ERR: onCarUpdate (1001): timestamp is 7 ms in the future: 74152 (now: 74144 offset: 23317)
+74362: ==ERR: onCarUpdate (1001): timestamp is 6 ms in the future: 74369 (now: 74362 offset: 23317)
+74955: ==ERR: onCarUpdate (1001): timestamp is 6 ms in the future: 74962 (now: 74955 offset: 23317)
+75062: ==ERR: onCarUpdate (1001): timestamp is 6 ms in the future: 75069 (now: 75062 offset: 23317)
+75280: ==ERR: onCarUpdate (1001): timestamp is 6 ms in the future: 75287 (now: 75280 offset: 23317)
+75388: ==ERR: onCarUpdate (1001): timestamp is 5 ms in the future: 75394 (now: 75388 offset: 23317)
+75713: ==ERR: onCarUpdate (1001): timestamp is 5 ms in the future: 75719 (now: 75713 offset: 23317)
+77114: ==ERR: onCarUpdate (1001): timestamp is 6 ms in the future: 77121 (now: 77114 offset: 23316)
+77222: ==ERR: onCarUpdate (1001): timestamp is 5 ms in the future: 77228 (now: 77222 offset: 23316)
+77440: ==ERR: onCarUpdate (1001): timestamp is 5 ms in the future: 77446 (now: 77440 offset: 23316)
+78842: ==ERR: onCarUpdate (1001): timestamp is 5 ms in the future: 78848 (now: 78842 offset: 23316)
+79060: ==ERR: onCarUpdate (1001): timestamp is 7 ms in the future: 79068 (now: 79060 offset: 23318)
+79168: ==ERR: onCarUpdate (1001): timestamp is 6 ms in the future: 79175 (now: 79168 offset: 23318)
+79545: ==ERR: onCarUpdate (1001): timestamp is 7 ms in the future: 79553 (now: 79545 offset: 23318)
+79653: ==ERR: onCarUpdate (1001): timestamp is 6 ms in the future: 79660 (now: 79653 offset: 23318)
+79762: ==ERR: onCarUpdate (1001): timestamp is 7 ms in the future: 79770 (now: 79762 offset: 23318)
+79872: ==ERR: onCarUpdate (1001): timestamp is 5 ms in the future: 79878 (now: 79872 offset: 23318)
+80572: ==ERR: onCarUpdate (1001): timestamp is 6 ms in the future: 80579 (now: 80572 offset: 23317)
+81272: ==ERR: onCarUpdate (1001): timestamp is 7 ms in the future: 81280 (now: 81272 offset: 23318)
+81491: ==ERR: onCarUpdate (1001): timestamp is 6 ms in the future: 81498 (now: 81491 offset: 23318)
+81599: ==ERR: onCarUpdate (1001): timestamp is 5 ms in the future: 81605 (now: 81599 offset: 23318)
+81706: ==ERR: onCarUpdate (1001): timestamp is 6 ms in the future: 81713 (now: 81706 offset: 23318)
+81975: ==ERR: onCarUpdate (1001): timestamp is 5 ms in the future: 81981 (now: 81975 offset: 23316)
+82515: ==ERR: onCarUpdate (1001): timestamp is 5 ms in the future: 82521 (now: 82515 offset: 23316)
+82732: ==ERR: onCarUpdate (1001): timestamp is 5 ms in the future: 82738 (now: 82732 offset: 23316)
+83492: Detected sessionPhase <session overtime> -> <session completed> (Practice)
+83492: Sent session update to lobby
+83508: Session completed: Practice/<session completed> with 1 cars and 1 connections
+83508: Send session results to 1 clients (235 byte)
+83523: Session aftercare over, advancing to next session
+83523: Session changed: Practice -> Qualifying 0
+83523: Detected sessionPhase <session completed> -> <waiting for drivers> (Qualifying)
+83523: Sent session update to lobby
+83538: 1 Driver(s) detected, starting session
+83538: SessionManager::randomizeGreenFlagTriggers: s:0.983808 e:0.999999 r:0.996902
+83538: Detected sessionPhase <waiting for drivers> -> <pre session> (Qualifying)
+83538: Sent session update to lobby
+83569: Receives driver stint reset for car 1001
+83646: Updated 0 clients with new carSystem for car 1001 (0l)
+83662: Updated 0 clients with new carSystem for car 1001 (16l)
+84405: ==ERR: onCarUpdate (1001): timestamp is 6 ms in the future: 84412 (now: 84405 offset: 23317)
+84729: ==ERR: onCarUpdate (1001): timestamp is 7 ms in the future: 84737 (now: 84729 offset: 23317)
+86294: ==ERR: onCarUpdate (1001): timestamp is 5 ms in the future: 86300 (now: 86294 offset: 23315)
+86544: Detected sessionPhase <session> -> <session> (Qualifying)
+86544: Sent session update to lobby
+87212: ==ERR: onCarUpdate (1001): timestamp is 5 ms in the future: 87218 (now: 87212 offset: 23316)
+88455: ==ERR: onCarUpdate (1001): timestamp is 6 ms in the future: 88462 (now: 88455 offset: 23317)
+88673: ==ERR: onCarUpdate (1001): timestamp is 5 ms in the future: 88679 (now: 88673 offset: 23317)
+88780: ==ERR: onCarUpdate (1001): timestamp is 6 ms in the future: 88787 (now: 88780 offset: 23317)
+88888: ==ERR: onCarUpdate (1001): timestamp is 5 ms in the future: 88894 (now: 88888 offset: 23317)
+89372: ==ERR: onCarUpdate (1001): timestamp is 5 ms in the future: 89378 (now: 89372 offset: 23316)
+89590: ==ERR: onCarUpdate (1001): timestamp is 5 ms in the future: 89596 (now: 89590 offset: 23316)
+90130: ==ERR: onCarUpdate (1001): timestamp is 5 ms in the future: 90136 (now: 90130 offset: 23316)
+91857: ==ERR: onCarUpdate (1001): timestamp is 5 ms in the future: 91863 (now: 91857 offset: 23316)
+91965: ==ERR: onCarUpdate (1001): timestamp is 5 ms in the future: 91971 (now: 91965 offset: 23316)
+92182: ==ERR: onCarUpdate (1001): timestamp is 5 ms in the future: 92188 (now: 92182 offset: 23316)
+92774: ==ERR: onCarUpdate (1001): timestamp is 6 ms in the future: 92781 (now: 92774 offset: 23316)
+93153: ==ERR: onCarUpdate (1001): timestamp is 5 ms in the future: 93159 (now: 93153 offset: 23317)
+93370: ==ERR: onCarUpdate (1001): timestamp is 6 ms in the future: 93377 (now: 93370 offset: 23317)
+94449: ==ERR: onCarUpdate (1001): timestamp is 5 ms in the future: 94455 (now: 94449 offset: 23315)
+96122: ==ERR: onCarUpdate (1001): timestamp is 5 ms in the future: 96128 (now: 96122 offset: 23316)
+97095: ==ERR: onCarUpdate (1001): timestamp is 7 ms in the future: 97103 (now: 97095 offset: 23318)
+97312: ==ERR: onCarUpdate (1001): timestamp is 7 ms in the future: 97320 (now: 97312 offset: 23318)
+97421: ==ERR: onCarUpdate (1001): timestamp is 6 ms in the future: 97428 (now: 97421 offset: 23318)
+97637: ==ERR: onCarUpdate (1001): timestamp is 5 ms in the future: 97643 (now: 97637 offset: 23318)
+97854: ==ERR: onCarUpdate (1001): timestamp is 5 ms in the future: 97860 (now: 97854 offset: 23318)
+97960: ==ERR: onCarUpdate (1001): timestamp is 7 ms in the future: 97968 (now: 97960 offset: 23318)
+100120: ==ERR: onCarUpdate (1001): timestamp is 5 ms in the future: 100126 (now: 100120 offset: 23316)
+101037: ==ERR: onCarUpdate (1001): timestamp is 5 ms in the future: 101043 (now: 101037 offset: 23316)
+101144: ==ERR: onCarUpdate (1001): timestamp is 5 ms in the future: 101150 (now: 101144 offset: 23315)
+102280: ==ERR: onCarUpdate (1001): timestamp is 7 ms in the future: 102288 (now: 102280 offset: 23318)
+102387: ==ERR: onCarUpdate (1001): timestamp is 7 ms in the future: 102395 (now: 102387 offset: 23318)
+102495: ==ERR: onCarUpdate (1001): timestamp is 7 ms in the future: 102503 (now: 102495 offset: 23318)
+102604: ==ERR: onCarUpdate (1001): timestamp is 5 ms in the future: 102610 (now: 102604 offset: 23318)
+102714: ==ERR: onCarUpdate (1001): timestamp is 5 ms in the future: 102720 (now: 102714 offset: 23318)
+104222: ==ERR: onCarUpdate (1001): timestamp is 5 ms in the future: 104228 (now: 104222 offset: 23316)
+104547: ==ERR: onCarUpdate (1001): timestamp is 5 ms in the future: 104553 (now: 104547 offset: 23316)
+105572: ==ERR: onCarUpdate (1001): timestamp is 5 ms in the future: 105578 (now: 105572 offset: 23316)
+105897: ==ERR: onCarUpdate (1001): timestamp is 5 ms in the future: 105903 (now: 105897 offset: 23316)
+106004: ==ERR: onCarUpdate (1001): timestamp is 6 ms in the future: 106011 (now: 106004 offset: 23316)
+106112: ==ERR: onCarUpdate (1001): timestamp is 5 ms in the future: 106118 (now: 106112 offset: 23316)
+106222: ==ERR: onCarUpdate (1001): timestamp is 6 ms in the future: 106229 (now: 106222 offset: 23317)
+106330: ==ERR: onCarUpdate (1001): timestamp is 6 ms in the future: 106337 (now: 106330 offset: 23317)
+107140: ==ERR: onCarUpdate (1001): timestamp is 6 ms in the future: 107147 (now: 107140 offset: 23317)
+107248: ==ERR: onCarUpdate (1001): timestamp is 6 ms in the future: 107255 (now: 107248 offset: 23318)
+107357: ==ERR: onCarUpdate (1001): timestamp is 5 ms in the future: 107363 (now: 107357 offset: 23318)
+107574: ==ERR: onCarUpdate (1001): timestamp is 5 ms in the future: 107580 (now: 107574 offset: 23318)
+108058: ==ERR: onCarUpdate (1001): timestamp is 6 ms in the future: 108065 (now: 108058 offset: 23318)
+108922: ==ERR: onCarUpdate (1001): timestamp is 5 ms in the future: 108928 (now: 108922 offset: 23316)
+109030: ==ERR: onCarUpdate (1001): timestamp is 5 ms in the future: 109036 (now: 109030 offset: 23316)
