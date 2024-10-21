@@ -5,6 +5,9 @@ const express = require('express');
 const app = express();
 const { exec } = require('child_process');
 
+// Middleware para parsing do JSON no corpo da requisição
+app.use(express.json());
+
 const port = 44000;
 
 const serverProcesses = [];
@@ -185,6 +188,14 @@ function startHttp() {
         });
     });
 
+    // Endpoint que recebe dados de um evento
+    app.post('/receive_event', (req, res) => {
+        const event = req.body;
+        console.log('[/receive_event] event: ', JSON.stringify(event));
+        res.json({ message: '[/receive_event] evento recebido com sucesso' });
+    });
+
+
     app.listen(port, () => {
         console.log(`[acc-module-server] started on port: ${port}`);
     });
@@ -193,6 +204,7 @@ function startHttp() {
 // Função para iniciar a preparação dos dados de cada evento
 async function makeEventsData() {
     for (const Event of EventsData) {
+
         Event.QueueMsgs = []; // Inicializar fila de mensagens para o evento
         Event.webSocket_clients = []; // Inicializar a lista de clientes conectados via WebSocket
 

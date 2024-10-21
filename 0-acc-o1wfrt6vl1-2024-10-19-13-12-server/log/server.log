@@ -1,0 +1,32 @@
+0: Server starting with version 256
+0: Starting server ACC JS test
+0: ==ERR: preRaceWaitingTimeSeconds (30) has been set to 80s, 1051333504 seconds are too low for public Multiplayer
+0: allowAutoDQ is set to false, but is a public server. Will use auto DQs!
+0: Joining during race is allowed
+0: FileToStruct cfg/eventRules.json
+0: maxCarSlots 30 exceeds the allowed slots by Rating requirement (10). Add Track Medal and Safety Rating Requirements to gain up to 30 slots (3 TM + 70 SA)
+0: Translated realtime interval hzToMiliseconds(18)=54
+
+0: SessionManager::randomizeGreenFlagTriggers: s:0.890000 e:0.950000 r:0.909906
+0: Track barcelona was set and updated
+0: Event changed
+0: ==ERR: Ignoring special event rules for public Multiplayer
+0: ==ERR: Ignoring special assist rules for public Multiplayer
+0: SessionManager::randomizeGreenFlagTriggers: s:0.890000 e:0.950000 r:0.943067
+0: Significant change detected, updating lobby (1|1)
+0: maxCarSlots 30 exceeds the allowed slots by Rating requirement (10). Add Track Medal and Safety Rating Requirements to gain up to 30 slots (3 TM + 70 SA)
+0: Resetting weekend to friday night
+0: Reset time to friday night: 0 -> 0
+0: Reset time to first session: 0 -> 122400
+0: SessionManager::randomizeGreenFlagTriggers: s:0.890000 e:0.950000 r:0.904918
+0: Listening to TCP 9601 | UDP 9601
+266: Trying to connect to lobby (0 times, interval 10000 s)
+266: Session changed: Practice -> Practice 0
+266: Detected sessionPhase <waiting for drivers> -> <waiting for drivers> (Practice)
+21292: ==ERR: RegisterToLobby TCP connection failed, couldn't connect to the lobby server
+21307: Trying to connect to lobby (1 times, interval 13000 s)
+22457: RegisterToLobby succeeded
+22472: Sent lobby registration request for barcelona
+22641: TCPQueue now: 4
+22641: New TCP incoming pakSizeMax, 0 => 2
+22641: Updated lobby with 0 drivers

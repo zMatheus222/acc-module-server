@@ -1,0 +1,37 @@
+{
+  "ambientTemp": 18,
+  "cloudLevel": 0.1,
+  "configVersion": 1,
+  "isFixedConditionQualification": 0,
+  "postQualySeconds": 15,
+  "postRaceSeconds": 15,
+  "preRaceWaitingTimeSeconds": 30,
+  "rain": 0,
+  "sessionOverTimeSeconds": 120,
+  "sessions": [
+    {
+      "dayOfWeekend": 2,
+      "hourOfDay": 10,
+      "sessionDurationMinutes": 1,
+      "sessionType": "P",
+      "timeMultiplier": 1
+    },
+    {
+      "dayOfWeekend": 2,
+      "hourOfDay": 13,
+      "sessionDurationMinutes": 1,
+      "sessionType": "Q",
+      "timeMultiplier": 1
+    },
+    {
+      "dayOfWeekend": 3,
+      "hourOfDay": 14,
+      "sessionDurationMinutes": 1,
+      "sessionType": "R",
+      "timeMultiplier": 1
+    }
+  ],
+  "simracerWeatherConditions": 0,
+  "track": "barcelona",
+  "weatherRandomness": 1
+}

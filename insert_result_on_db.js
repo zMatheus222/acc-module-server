@@ -6,7 +6,11 @@ const iconv = require('iconv-lite'); // Importa a biblioteca iconv-lite
 // Função para inserir dados no banco de dados
 async function insertIntoDatabase(sessionData, Event, sessionType) {
     
-    console.log(`[insertIntoDatabase] Iniciado!\nsessionData:\n${JSON.stringify(sessionData)}`);
+    console.log(`[insertIntoDatabase] Iniciado!\nsessionData:\n${JSON.stringify(sessionData)}\nEvent:\n${JSON.stringify(Event)}`);
+    if (sessionData.sessionResult.leaderBoardLines.length === 0) {
+        console.log('Arquivo de resultado com leaderBoardLines vazia, ignorando...');
+        return;
+    }
 
     const config = JSON.parse(fs.readFileSync('./config.json'));
 
@@ -21,6 +25,39 @@ async function insertIntoDatabase(sessionData, Event, sessionType) {
     try {
         await client.connect();
 
+        if (!Event.CfgEventFile || !Array.isArray(Event.CfgEventFile.sessions)) {
+            console.error('[insertIntoDatabase] CfgEventFile ou sessions indefinido:', JSON.stringify(Event));
+            return;
+        }
+
+        // coletar dados referente ao Event (sessao === ao tipo passado, P Q ou R)
+        const Session = Event.CfgEventFile.sessions.find(session => session.sessionType === sessionType);
+
+        // Realizar querys antes do for e iterar depois:
+
+        // coletar todos os ids de pilotos da tabela base.pilotos
+        const base_pilotos = await client.query('SELECT id, steam_guid FROM base.pilotos');
+        if (base_pilotos.rows.length === 0) {
+            console.error('[insertIntoDatabase] Nenhum piloto encontrado na tabela base.pilotos');
+        }
+
+        /*
+        acc.sessoes:
+        "id"	"etapa_id"	"sessiontype"	"dayofweekend"	"hourofday"	"sessiondurationminutes"	"timemultiplier"
+          1	         1	          "P"	           1	        10             	60	                       1
+        */
+
+        // Inserir dados na tabela acc.sessoes e retornar id da sessão inserida
+        const resultSessao = await client.query(
+            `INSERT INTO acc.sessoes (etapa_id, sessiontype, dayofweekend, hourofday, sessiondurationminutes, timemultiplier)
+            VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`, 
+            [parseInt(Event.etapa, 10), sessionType, parseInt(Session.dayOfWeekend, 10), parseInt(Session.hourOfDay, 10), parseInt(Session.sessionDurationMinutes, 10), parseFloat(Session.timeMultiplier)]
+        );
+        
+        const id_sessao = resultSessao.rows[0].id;
+
+        console.log('[insertIntoDatabase] Dados da sessão inseridos com sucesso.');
+
         // Verifique se leaderBoardLines existe e é um array
         if (!Array.isArray(sessionData.sessionResult.leaderBoardLines)) {
             console.error('[insertIntoDatabase] leaderBoardLines não é um array valido ou está indefinido:', JSON.stringify(sessionData));
@@ -31,26 +68,24 @@ async function insertIntoDatabase(sessionData, Event, sessionType) {
 
             console.log('----> result: ', result);
 
-            const queryText = `INSERT INTO acc.sessoes (etapa_id, sessiontype, dayofweekend, hourofday, sessiondurationminutes, timemultiplier) 
-            VALUES ($1, $2, $3, $4, $5, $6)`;
+            /*
+            acc.resultline:
+            "id_sessao"	 "id_piloto"	"id_classe"	"carmodel"	"lapcount"	"bestlap"	"totaltime"
+                1	          1	           1	        30        	28	      50237	       122676
+            */
 
-            // coletar dados referente ao Event (sessao === ao tipo passado, P Q ou R)
-            const Session = Event.CfgEventFile.session.find(session => session.sessionType === sessionType);
+            // iterar sobre todos os pilotos de base.pilotos com base no steam guid de car.drivers[0].playerId
+            // somente inserir o dado de resultado se for o piloto correto
+            for (piloto of base_pilotos.rows) {
+                if (piloto.id && piloto.steam_guid === result.car.drivers[0].playerId) {
+                    await client.query(
+                        `INSERT INTO acc.resultline (id_sessao, id_piloto, id_classe, carmodel, lapcount, bestlap, totaltime) 
+                        VALUES ($1, $2, $3, $4, $5, $6, $7)`, 
+                        [id_sessao, piloto.id, result.car.cupCategory + 1, result.car.carModel, result.timing.lapCount, result.timing.bestLap, result.timing.totalTime]
+                    );       
+                }
+            }
 
-            // Extraindo e convertendo valores do sessionData
-            const sessionValues = [
-                parseInt(Event.etapa, 10),              // etapa_id (deve ser um inteiro)
-                sessionType,                            // sessiontype (string)
-                parseInt(Session.dayOfWeekend, 10),     // dayofweekend (inteiro)
-                parseInt(Session.hourOfDay, 10),        // hourofday (inteiro)
-                parseInt(Session.sessionDurationMinutes, 10), // sessiondurationminutes (inteiro)
-                parseFloat(Session.timeMultiplier)      // timemultiplier (float)
-            ];
-
-            console.log('[insertIntoDatabase] Valores a serem inseridos:', sessionValues);
-
-            await client.query(queryText, sessionValues);
-            console.log('[insertIntoDatabase] Dados da sessão inseridos com sucesso.');
         }
 
         console.log('[insertIntoDatabase] Dados do leaderboard inseridos com sucesso!');
@@ -126,7 +161,6 @@ async function insertResult(Event, sessionType) {
 
         // Inserir os dados no banco de dados
         await insertIntoDatabase(sessionData, Event, sessionType);
-        console.log('[insertResult] Dados inseridos no banco de dados com sucesso.');
 
     } catch (err) {
         console.error('[insert_result_on_db] Erro ao ler o arquivo de resultado:', err);
