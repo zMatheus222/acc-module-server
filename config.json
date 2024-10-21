@@ -1,0 +1,12 @@
+{
+    "cfgs": {
+        "postgresql": {
+            "con_delay": 1,
+            "dbname": "db",
+            "user": "local",
+            "password": "pass123",
+            "hostaddr": "146.235.36.58",
+            "port": "5432"
+        }
+    }
+}

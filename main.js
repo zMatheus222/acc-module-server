@@ -3,153 +3,230 @@ const path = require('path');
 const fs = require('fs');
 const express = require('express');
 const app = express();
+const { exec } = require('child_process');
 
 const port = 44000;
-let webSocket_clients = [];
-const QueueMsgs = [];
-let MessagesFilter = [];
 
-function loadMessagesFilter() {
-    const messages_path = path.join(__dirname, 'messages_filter.json');
+const serverProcesses = [];
+let EventsData = [];
+let MessagesFilter;
 
-    fs.readFile(messages_path, 'utf8', (err, data) => {
-        if (err){
-            console.error('[loadMessagesFilter] Erro ao ler o arquivo:', err);
+// Carregar filtro de mensagens do arquivo JSON
+async function loadMessagesFilter() {
+    try {
+        // Use fs.promises.readFile ao invés de fs.readFile
+        MessagesFilter = await fs.promises.readFile(path.join(__dirname, 'messages_filter.json'), 'utf-8');
+        MessagesFilter = JSON.parse(MessagesFilter);  // Se o arquivo for JSON, parseie-o
+    } catch (error) {
+        console.error('Erro ao carregar o filtro de mensagens:', error);
+        throw error;
+    }
+}
+
+// Copiar a pasta base do servidor para uma nova pasta específica do evento
+async function copyServerBase(eventId) {
+    try {
+        const serverBase = path.join(__dirname, 'acc_server');
+        const newServerDir = path.join(__dirname, `${eventId}-server`);
+
+        // Copiar a pasta do servidor base para uma nova pasta com o nome do evento
+        await fs.promises.cp(serverBase, newServerDir, { recursive: true });
+
+        return newServerDir;
+    } catch (error) {
+        console.error(`Erro ao copiar a pasta do servidor para o evento ${eventId}:`, error);
+        throw error;  // Para garantir que o processo pare se houver um erro crítico
+    }
+}
+
+async function updateEventJson(serverDir, sessionDetails) {
+    const eventJsonPath = path.join(serverDir, 'cfg', 'event.json');
+
+    // Sobrescrever o arquivo event.json com os detalhes da sessão
+    const updatedEventData = JSON.stringify(sessionDetails, null, 2);
+    await fs.promises.writeFile(eventJsonPath, updatedEventData, 'utf-8');
+}
+
+// Calcular o tempo restante até o início do evento
+function calculateStartTime(startDate) {
+    const eventStartTime = new Date(startDate).getTime();
+    const currentTime = new Date().getTime();
+    return eventStartTime - currentTime;
+}
+
+// Função para executar o script insert_result_on_db.js
+function runInsertResultScript(Event, sessionType) {
+
+    const tempFilePath = path.join(__dirname, 'temp_event.json');
+
+    // Salvar o objeto Event em um arquivo temporário
+    fs.writeFileSync(tempFilePath, JSON.stringify(Event));
+    
+    const command = `node insert_result_on_db.js "${tempFilePath}" ${sessionType}`;
+
+    //console.log(`Executando node insert_result_on_db.js com sessionType: ${sessionType}\nEvent:\n${JSON.stringify(Event)}`);
+
+    exec(command, (error, stdout, stderr) => {
+        if (error) {
+            console.error(`Erro ao executar o script: ${error.message}`);
             return;
         }
-        
-        try {
-            MessagesFilter = JSON.parse(data);
-        } catch(parseError) {
-            console.error('Erro ao parsear o JSON:', parseError);
+
+        if (stderr) {
+            console.error(`Erro de execução: ${stderr}`);
+            return;
         }
+
+        console.log(`Saída do script: ${stdout}`);
     });
 }
 
-function loadArgs() {
-    const args = process.argv.slice(2);
-    if (args.length < 2) {
-        console.log('Insira pelo menos 2 argumentos (leia Arguments.md)');
-        process.exit(1);
-    }
-
-    const base_info = JSON.parse(args[0]);
-    const sessions = JSON.parse(args[1]);
-
-    //console.log('base_info: ', base_info, '\nsessions: ', sessions);
-
-    const eventFilePath = path.join(__dirname, 'acc_server', 'cfg', 'event.json');
-    fs.writeFileSync(eventFilePath, JSON.stringify(sessions, null, 4), 'utf8');
-    console.log(`Arquivo ${eventFilePath} sobrescrito com sucesso!`);
-}
-
-function startServer() {
-    const exePath = path.join(__dirname, 'acc_server', 'accServer.exe');
-
-    console.log('Inicializando servidor do ACC!');
-    const child = spawn(exePath, { cwd: path.dirname(exePath) });
-
-    child.stdout.on('data', data => {
-        //console.log(`stdout:\n${data}`);
-        handleOutput(data.toString());
-    });
-
-    child.stderr.on('data', data => {
-        //console.error(`stderr: ${data}`);
-        handleOutput(data.toString());
-    });
-
-    child.on('error', (error) => {
-        //console.error(`error: ${error.message}`);
-    });
-
-    child.on('close', (code) => {
-        console.log(`child process exited with code ${code}`);
-        waitToSendMsg(`Servidor encerrado com o código ${code}`);
-    });
-}
-
-function handleOutput(output) {
-    // Divide a saída em linhas e insere cada linha na fila
-    const lines = output.split('\n');
-    lines.forEach(line => {
-        if (line.trim()) { // Ignora linhas vazias
-            waitToSendMsg(line); // Insere na fila para envio
-        }
-    });
-}
-
-function waitToSendMsg(message) {
-
-    // console.log('Inserindo mensagem a QueueMsgs');
-
-    // comparar mensagem com lista de mensagens do arquivo messages_filter.json
-    for (msg_f of MessagesFilter) {
+// Função para gerenciar o envio de mensagens para a fila
+function waitToSendMsg(message, Event) {
+    for (const msg_f of MessagesFilter) {
         if (msg_f.type === "ignore") {
             continue;
         }
         else if (msg_f.type === "info" && message.match(new RegExp(msg_f.message))) {
-            console.log('Informação adicionada a QueueMsgs, Mensagem: ', message);
-            QueueMsgs.push(message);
+            console.log('Informação adicionada a Event.QueueMsgs, Mensagem: ', message);
+            Event.QueueMsgs.push(message);
         }
         else if (msg_f.type === "practice_finish" && message.match(new RegExp(msg_f.message))) {
-            console.log('Treino Livre Finalizado! Mensagem: ', message);
-            // pegar o resultado do qualy e inserir no banco de dados
+            console.log(`[${Event.eventId}] Treino Livre Finalizado! Mensagem: `, message);
+            runInsertResultScript(Event, 'P');
         }
         else if (msg_f.type === "qualy_finish" && message.match(new RegExp(msg_f.message))) {
-            console.log('Qualificação Finalizada! Mensagem: ', message);
-            // pegar o resultado do qualy e inserir no banco de dados
+            console.log(`[${Event.eventId}] Qualificação Finalizada! Mensagem: `, message);
+            runInsertResultScript(Event, 'Q');
         }
-        else if (msg_f.type === "race_finish" && message.match(new RegExp(msg_f.message))){
-            console.log('Corrida Finalizada! Mensagem: ', message);
-            // pegar o resultado da corrida e inserir no banco de dados
+        else if (msg_f.type === "race_finish" && message.match(new RegExp(msg_f.message))) {
+            console.log(`[${Event.eventId}] Corrida Finalizada! Mensagem: `, message);
+            runInsertResultScript(Event, 'R');
         }
-
     }
 }
 
-function sendMessagesToClient() {
-    setInterval(() => {
-        if (QueueMsgs.length > 0) {
-            const message = QueueMsgs.shift(); // Pega a primeira mensagem da fila
-            console.log('Enviando mensagem:', message);
-
-            // Envia a mensagem para todos os clientes conectados
-            webSocket_clients.forEach(client => client.write(`data: ${message}\n\n`));
+// Manipular a saída e processá-la linha por linha
+function handleOutput(output, Event) {
+    const lines = output.split('\n');
+    lines.forEach(line => {
+        if (line.trim()) {
+            waitToSendMsg(line, Event);
         }
-        // Não faz nada quando não há mensagens, apenas continua o loop
-    }, 300); // Intervalo de 100ms para verificar a fila e enviar mensagens
+    });
 }
 
+// Função para iniciar o servidor e capturar a saída
+function startServer(serverDir, Event) {
+    const exePath = path.join(__dirname, 'acc_server', 'accServer.exe'); // Caminho do executável do servidor
+    console.log(`Iniciando servidor do ACC em ${serverDir}`);
+    
+    const serverProcess = spawn(exePath, { cwd: serverDir }); // Inicie o executável no diretório do evento
+    serverProcesses.push(serverProcess);
+
+    // Captura a saída do servidor
+    serverProcess.stdout.on('data', (data) => {
+        handleOutput(data.toString(), Event);
+    });
+
+    serverProcess.stderr.on('data', (data) => {
+        handleOutput(data.toString(), Event);
+    });
+
+    serverProcess.on('close', (code) => {
+        console.log(`Servidor ${Event.eventId} finalizado com código ${code}`);
+    });
+}
+
+// Carregar os argumentos fornecidos para o script
+function loadArgs() {
+    const args = process.argv.slice(2);
+    if (args.length < 1) {
+        console.log('Insira pelo menos 1 argumento (leia Arguments.md)');
+        process.exit(1);
+    }
+
+    try {
+        EventsData = JSON.parse(args[0]);
+    } catch (error) {
+        console.error('Erro ao carregar os dados do evento:', error);
+        process.exit(1);
+    }
+}
+
+// Função para enviar as mensagens armazenadas na fila para os clientes conectados
+function sendMessagesToClient(Event) {
+    setInterval(() => {
+        if (Event.QueueMsgs.length > 0) {
+            const message = Event.QueueMsgs.shift();
+            console.log(`[${Event.eventId}]:`, message);
+
+            // Envia a mensagem para todos os clientes conectados
+            Event.webSocket_clients.forEach(client => client.write(`data: ${message}\n\n`));
+        }
+    }, 300); // Intervalo de 300ms
+}
+
+// Inicializar o servidor HTTP para gerenciar os clientes WebSocket
 function startHttp() {
     app.use(express.static(path.join(__dirname, 'public')));
 
-    app.get('/', (req, res) => {
-        res.sendFile(path.join(__dirname, 'public', 'index.html'));
-    });
-
-    app.get('/events', (req, res) => {
-        res.setHeader('Content-Type', 'text/event-stream');
-        res.setHeader('Cache-Control', 'no-cache');
-        res.setHeader('Connection', 'keep-alive');
-        res.flushHeaders();
-        webSocket_clients.push(res); // Adiciona o cliente à lista
-        req.on('close', () => {
-            webSocket_clients = webSocket_clients.filter(client => client !== res);
+    // Aqui, você cria uma rota para cada eventId
+    EventsData.forEach(Event => {
+        app.get('/' + Event.eventId, (req, res) => {
+            res.setHeader('Content-Type', 'text/event-stream');
+            res.setHeader('Cache-Control', 'no-cache');
+            res.setHeader('Connection', 'keep-alive');
+            res.flushHeaders();
+            Event.webSocket_clients.push(res);
+            req.on('close', () => {
+                Event.webSocket_clients = Event.webSocket_clients.filter(client => client !== res);
+            });
         });
     });
-    
+
     app.listen(port, () => {
         console.log(`[acc-module-server] started on port: ${port}`);
     });
 }
 
-try {
-    loadArgs();
-    loadMessagesFilter();
-    startServer();
-    startHttp();
-    sendMessagesToClient();
-} catch (err) {
-    console.log('Erro de execução: ', err);
+// Função para iniciar a preparação dos dados de cada evento
+async function makeEventsData() {
+    for (const Event of EventsData) {
+        Event.QueueMsgs = []; // Inicializar fila de mensagens para o evento
+        Event.webSocket_clients = []; // Inicializar a lista de clientes conectados via WebSocket
+
+        const { eventId, start_date, CfgEventFile } = Event;
+
+        // 1. Copiar a pasta do servidor base
+        const serverDir = await copyServerBase(eventId);
+
+        // 2. Atualizar o arquivo event.json
+        await updateEventJson(serverDir, CfgEventFile);
+
+        // 3. Calcular o tempo de início
+        const startTime = calculateStartTime(start_date);
+        const safetyMargin = 1000;
+
+        if (startTime > safetyMargin) {
+            console.log(`Servidor ${eventId} será iniciado em ${startTime / 1000} segundos`);
+            setTimeout(() => {
+                startServer(serverDir, Event);
+                startHttp(Event);
+                sendMessagesToClient(Event);
+            }, startTime);
+        } else {
+            console.log(`A hora de início do evento ${eventId} já passou. Iniciando o servidor imediatamente.`);
+            startServer(serverDir, Event);
+            sendMessagesToClient(Event);
+        }
+    }
 }
+
+// Iniciar o script
+(async () => {
+    loadArgs();
+    await loadMessagesFilter();
+    startHttp();
+    await makeEventsData();
+})();
