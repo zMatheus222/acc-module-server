@@ -4,9 +4,11 @@ const fs = require('fs');
 const express = require('express');
 const app = express();
 const { exec } = require('child_process');
+const cors = require('cors');
 
 // Middleware para parsing do JSON no corpo da requisição
 app.use(express.json());
+app.use(cors()); // Permite todas as origens
 
 const port = 44000;
 
@@ -141,22 +143,6 @@ function startServer(serverDir, Event) {
     });
 }
 
-// Carregar os argumentos fornecidos para o script
-function loadArgs() {
-    const args = process.argv.slice(2);
-    if (args.length < 1) {
-        console.log('Insira pelo menos 1 argumento (leia Arguments.md)');
-        process.exit(1);
-    }
-
-    try {
-        EventsData = JSON.parse(args[0]);
-    } catch (error) {
-        console.error('Erro ao carregar os dados do evento:', error);
-        process.exit(1);
-    }
-}
-
 // Função para enviar as mensagens armazenadas na fila para os clientes conectados
 function sendMessagesToClient(Event) {
     setInterval(() => {
@@ -175,7 +161,10 @@ function startHttp() {
     app.use(express.static(path.join(__dirname, 'public')));
 
     // Aqui, você cria uma rota para cada eventId
-    EventsData.forEach(Event => {
+    function createServerMonitor(Event) {
+
+        console.log('[createServerMonitor] Criando endpoint para monitoramento do evento');
+
         app.get('/' + Event.eventId, (req, res) => {
             res.setHeader('Content-Type', 'text/event-stream');
             res.setHeader('Cache-Control', 'no-cache');
@@ -186,13 +175,47 @@ function startHttp() {
                 Event.webSocket_clients = Event.webSocket_clients.filter(client => client !== res);
             });
         });
-    });
+    };
 
     // Endpoint que recebe dados de um evento
     app.post('/receive_event', (req, res) => {
-        const event = req.body;
-        console.log('[/receive_event] event: ', JSON.stringify(event));
-        res.json({ message: '[/receive_event] evento recebido com sucesso' });
+        try {
+            if (req.body) {
+
+                const Event = req.body;
+
+                console.log('[/receive_event] Event: ', JSON.stringify(Event));
+
+                makeEventsData(Event);
+                createServerMonitor(Event);
+                res.json({ message: '[/receive_event] evento recebido com sucesso' });
+            } else {
+                res.json({ error: '[/receive_event] erro ao receber os dados do evento, verifique o JSON' });
+            }
+        }
+        catch(err) {
+            console.log('[/receive_event] Exception: Erro ao tentar receber os dados do evento.');
+        }
+        
+    });
+
+    // Endpoint que recebe dados de um evento
+    app.post('/receive_preset', (req, res) => {
+        try {
+            if (req.body) {
+
+                const Preset = req.body;
+                console.log('[/receive_event] Preset: ', JSON.stringify(Preset));
+
+                res.json({ message: '[/receive_event] preset recebido com sucesso' });
+            } else {
+                res.json({ error: '[/receive_event] erro ao receber os dados do preset, verifique o JSON' });
+            }
+        }
+        catch(err) {
+            console.log('[/receive_event] Exception: Erro ao tentar receber os dados do evento.');
+        }
+        
     });
 
 
@@ -202,43 +225,42 @@ function startHttp() {
 }
 
 // Função para iniciar a preparação dos dados de cada evento
-async function makeEventsData() {
-    for (const Event of EventsData) {
+async function makeEventsData(Event) {
 
-        Event.QueueMsgs = []; // Inicializar fila de mensagens para o evento
-        Event.webSocket_clients = []; // Inicializar a lista de clientes conectados via WebSocket
+    console.log('[makeEventsData] Iniciado! Event: ', JSON.stringify(Event));
 
-        const { eventId, start_date, CfgEventFile } = Event;
+    Event.QueueMsgs = []; // Inicializar fila de mensagens para o evento
+    Event.webSocket_clients = []; // Inicializar a lista de clientes conectados via WebSocket
 
-        // 1. Copiar a pasta do servidor base
-        const serverDir = await copyServerBase(eventId);
+    const { eventId, start_date, CfgEventFile } = Event;
 
-        // 2. Atualizar o arquivo event.json
-        await updateEventJson(serverDir, CfgEventFile);
+    console.log(`eventId: ${eventId} | start_date: ${start_date} | CfgEventFile: ${CfgEventFile}`);
 
-        // 3. Calcular o tempo de início
-        const startTime = calculateStartTime(start_date);
-        const safetyMargin = 1000;
+    // 1. Copiar a pasta do servidor base
+    const serverDir = await copyServerBase(eventId);
 
-        if (startTime > safetyMargin) {
-            console.log(`Servidor ${eventId} será iniciado em ${startTime / 1000} segundos`);
-            setTimeout(() => {
-                startServer(serverDir, Event);
-                startHttp(Event);
-                sendMessagesToClient(Event);
-            }, startTime);
-        } else {
-            console.log(`A hora de início do evento ${eventId} já passou. Iniciando o servidor imediatamente.`);
+    // 2. Atualizar o arquivo event.json
+    await updateEventJson(serverDir, CfgEventFile);
+
+    // 3. Calcular o tempo de início
+    const startTime = calculateStartTime(start_date);
+    const safetyMargin = 1000;
+
+    if (startTime > safetyMargin) {
+        console.log(`Servidor ${eventId} será iniciado em ${startTime / 1000} segundos`);
+        setTimeout(() => {
             startServer(serverDir, Event);
             sendMessagesToClient(Event);
-        }
+        }, startTime);
+    } else {
+        console.log(`A hora de início do evento ${eventId} já passou. Iniciando o servidor imediatamente.`);
+        startServer(serverDir, Event);
+        sendMessagesToClient(Event);
     }
 }
 
 // Iniciar o script
 (async () => {
-    loadArgs();
     await loadMessagesFilter();
     startHttp();
-    await makeEventsData();
 })();

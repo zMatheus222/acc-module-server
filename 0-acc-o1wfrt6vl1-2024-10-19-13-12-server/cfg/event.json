@@ -24,10 +24,10 @@
       "timeMultiplier": 1
     },
     {
-      "dayOfWeekend": 3,
-      "hourOfDay": 14,
+      "dayOfWeekend": 2,
+      "hourOfDay": 10,
       "sessionDurationMinutes": 1,
-      "sessionType": "R",
+      "sessionType": "P",
       "timeMultiplier": 1
     }
   ],
