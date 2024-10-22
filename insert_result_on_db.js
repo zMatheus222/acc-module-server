@@ -66,7 +66,7 @@ async function insertIntoDatabase(sessionData, Event, sessionType) {
 
         for (const result of sessionData.sessionResult.leaderBoardLines) {
 
-            console.log('----> result: ', result);
+            console.log('----> piloto: ', result);
 
             /*
             acc.resultline:

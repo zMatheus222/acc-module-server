@@ -24,10 +24,6 @@
         "type": "info"
     },
     {
-        "message": "Session completed: Practice/<session completed> with \\d+ cars and \\d+ connections",
-        "type": "practice_finish"
-    },
-    {
         "message": "Session changed: Practice -> Qualifying 0",
         "type": "practice_finish"
     },
@@ -36,23 +32,7 @@
         "type": "qualy_finish"
     },
     {
-        "message": "Session changed: Qualifying -> Race 0",
-        "type": "qualy_finish"
-    },
-    {
-        "message": "Detected sessionPhase <session overtime> -> <session completed> (Race)",
-        "type": "race_finish"
-    },
-    {
-        "message": "Session completed: Race/<session completed> with \\d+ cars and \\d+ connections",
-        "type": "race_finish"
-    },
-    {
         "message": "Session over, waiting \\d+ postRaceSeconds",
-        "type": "race_finish"
-    },
-    {
-        "message": "Resetting race weekend",
         "type": "race_finish"
     }
 ]
