@@ -89,6 +89,13 @@ async function insertIntoDatabase(sessionData, Event, sessionType) {
         }
 
         console.log('[insertIntoDatabase] Dados do leaderboard inseridos com sucesso!');
+
+        // if(sessionType === 'R') {
+        //     console.log(`[${Event.eventId}] Evento finalizado!`);
+        //     await client.end();
+        //     process.exit(0);
+        // }
+
     } catch (err) {
         console.error('Erro ao inserir dados:', err);
     } finally {
@@ -167,6 +174,19 @@ async function insertResult(Event, sessionType) {
     }
 }
 
+// Função para atualizar o endpoint do redis
+async function UpdateRedisEndpoint(){
+    const options = { hostname: '185.101.104.129', port: 8083, path: '/update_get_eventos', method: 'POST', headers: { 'Content-Type': 'application/json', }};
+
+    const req = http.request(options, (res) => {
+        let responseData = '';
+        res.on('data', (chunck) => { responseData += chunck });
+        res.on('end', () => { console.log('[UpdateRedisEndpoint] Response:', responseData) });
+    });
+
+    req.on('error', (e) => { console.error(`[UpdateRedisEndpoint] Erro: ${e.message}`); });
+};
+
 // Obter o caminho do arquivo e o tipo de sessão dos argumentos
 const [tempFilePath, sessionType] = process.argv.slice(2);
 
@@ -181,6 +201,8 @@ if (tempFilePath && sessionType) {
         const Event = JSON.parse(EventString);
         
         insertResult(Event, sessionType);
+
+        UpdateRedisEndpoint();
     } catch (err) {
         console.error('[insert_result_on_db.js] Erro ao ler ou processar o arquivo:', err.message);
     }

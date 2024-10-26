@@ -1,0 +1,22 @@
+{
+    "serverName": "ACC JS test",
+    "adminPassword": "_Rpm2024x",
+    "password": "",
+    "spectatorPassword": "spec23",
+    "centralEntryListPath": "",
+    "carGroup": "FreeForAll",
+    "trackMedalsRequirement": 0,
+    "safetyRatingRequirement": -1,
+    "racecraftRatingRequirement": -1,
+    "maxCarSlots": 30,
+    "isRaceLocked": 0,
+    "isLockedPrepPhase": 0,
+    "shortFormationLap": 1,
+    "dumpLeaderboards": 1,
+    "dumpEntryList": 0,
+    "randomizeTrackWhenEmpty": 0,
+    "allowAutoDQ": 0,
+    "ignorePrematureDisconnects": 0,
+    "formationLapType": 0,
+    "configVersion": 1
+  }

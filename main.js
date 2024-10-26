@@ -5,6 +5,7 @@ const express = require('express');
 const app = express();
 const { exec } = require('child_process');
 const cors = require('cors');
+const { Client } = require('pg');
 
 // Middleware para parsing do JSON no corpo da requisição
 app.use(express.json());
@@ -13,7 +14,7 @@ app.use(cors()); // Permite todas as origens
 const port = 44000;
 
 const serverProcesses = [];
-let EventsData = [];
+//let EventsData = [];
 let MessagesFilter;
 
 // Carregar filtro de mensagens do arquivo JSON
@@ -156,9 +157,52 @@ function sendMessagesToClient(Event) {
     }, 300); // Intervalo de 300ms
 }
 
+async function InsertEventOnDb(Event) {
+
+    console.log('[InsertEventOnDb] Inserindo Event no banco acc.Etapas, ', Event);
+
+    const config = JSON.parse(fs.readFileSync('./config.json'));
+
+    const client = new Client({
+        user: config.cfgs.postgresql.user,
+        host: config.cfgs.postgresql.hostaddr,
+        database: config.cfgs.postgresql.dbname,
+        password: config.cfgs.postgresql.password,
+        port: config.cfgs.postgresql.port,
+    });
+
+    try {
+        await client.connect();
+
+        const eventoId = await client.query(`INSERT INTO acc.Etapas (eventId, temporada_id, etapa, stageName, startDate, trackName, carGroup, multiplicador_pts_etapa, ambient_temp, cloud_level, rain_percent, weather_randomness, mandatory_pit, mandatory_tyre_change, mandatory_refueling, fixed_time_pit) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14) RETURNING id`, 
+            [Event.eventId, Event.temporada, Event.etapa, Event.serverName, Event.start_date, Event.CfgEventFile.track, Event.carGroup, Event.multiplicador_pts_etapa, Event.CfgEventFile.ambientTemp, Event.CfgEventFile.cloudLevel, Event.CfgEventFile.rain, Event.CfgEventFile.weatherRandomness, Event.mandatory_pit, Event.mandatory_tyre_change, Event.mandatory_refueling, Event.fixed_time_pit]);
+        if (eventoId) {
+            console.log(`Evento inserido com sucesso em acc.Etapas, id: ${eventoId}`);
+        }
+
+        return eventoId;
+
+    } catch (error) {
+
+    }
+}
+
 // Inicializar o servidor HTTP para gerenciar os clientes WebSocket
 function startHttp() {
     app.use(express.static(path.join(__dirname, 'public')));
+
+    // Função para atualizar o endpoint do redis
+    async function UpdateRedisEndpoint(){
+        const options = { hostname: '185.101.104.129', port: 8083, path: '/update_get_eventos', method: 'POST', headers: { 'Content-Type': 'application/json', }};
+
+        const req = http.request(options, (res) => {
+            let responseData = '';
+            res.on('data', (chunck) => { responseData += chunck });
+            res.on('end', () => { console.log('[UpdateRedisEndpoint] Response:', responseData) });
+        });
+
+        req.on('error', (e) => { console.error(`[UpdateRedisEndpoint] Erro: ${e.message}`); });
+    };
 
     // Aqui, você cria uma rota para cada eventId
     function createServerMonitor(Event) {
@@ -178,7 +222,7 @@ function startHttp() {
     };
 
     // Endpoint que recebe dados de um evento
-    app.post('/receive_event', (req, res) => {
+    app.post('/receive_event', async (req, res) => {
         try {
             if (req.body) {
 
@@ -186,7 +230,9 @@ function startHttp() {
 
                 console.log('[/receive_event] Event: ', JSON.stringify(Event));
 
-                makeEventsData(Event);
+                await InsertEventOnDb(Event);
+                await UpdateRedisEndpoint();
+                await makeEventsData(Event);
                 createServerMonitor(Event);
                 res.json({ message: '[/receive_event] evento recebido com sucesso' });
             } else {
