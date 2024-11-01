@@ -1,14 +1,14 @@
 {
-    "qualifyStandingType": 1,
-    "pitWindowLengthSec": -1,
-    "driverStintTimeSec": -1,
-    "mandatoryPitstopCount": 0,
-    "maxTotalDrivingTime": -1,
-    "maxDriversCount": 1,
-    "tyreSetCount": 50,
-    "isRefuellingAllowedInRace": false,
-    "isRefuellingTimeFixed": false,
-    "isMandatoryPitstopRefuellingRequired": true,
-    "isMandatoryPitstopTyreChangeRequired": true,
-    "isMandatoryPitstopSwapDriverRequired": false
-  }
+  "mandatoryPitstopCount": "1",
+  "tyreSetCount": "15",
+  "isRefuellingAllowedInRace": true,
+  "isRefuellingTimeFixed": false,
+  "isMandatoryPitstopTyreChangeRequired": false,
+  "isMandatoryPitstopRefuellingRequired": true,
+  "qualifyStandingType": 1,
+  "pitWindowLengthSec": -1,
+  "driverStintTimeSec": -1,
+  "maxTotalDrivingTime": -1,
+  "maxDriversCount": 1,
+  "isMandatoryPitstopSwapDriverRequired": false
+}

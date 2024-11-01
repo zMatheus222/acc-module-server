@@ -6,6 +6,7 @@ const app = express();
 const { exec } = require('child_process');
 const cors = require('cors');
 const { Client } = require('pg');
+const http = require('http');
 
 // Middleware para parsing do JSON no corpo da requisição
 app.use(express.json());
@@ -51,6 +52,14 @@ async function updateEventJson(serverDir, sessionDetails) {
     // Sobrescrever o arquivo event.json com os detalhes da sessão
     const updatedEventData = JSON.stringify(sessionDetails, null, 2);
     await fs.promises.writeFile(eventJsonPath, updatedEventData, 'utf-8');
+}
+
+async function updateEventRules(serverDir, EventRules) {
+    const EventRulesJsonPath = path.join(serverDir, 'cfg', 'eventRules.json');
+
+    // Sobrescrever arquivo eventRules.json
+    const updatedEventRules = JSON.stringify(EventRules, null, 2);
+    await fs.promises.writeFile(EventRulesJsonPath, updatedEventRules, 'utf-8')
 }
 
 // Calcular o tempo restante até o início do evento
@@ -159,7 +168,7 @@ function sendMessagesToClient(Event) {
 
 async function InsertEventOnDb(Event) {
 
-    console.log('[InsertEventOnDb] Inserindo Event no banco acc.Etapas, ', Event);
+    console.log('[InsertEventOnDb] Inserindo Event no banco acc.Etapas, ', JSON.stringify(Event));
 
     const config = JSON.parse(fs.readFileSync('./config.json'));
 
@@ -174,8 +183,8 @@ async function InsertEventOnDb(Event) {
     try {
         await client.connect();
 
-        const eventoId = await client.query(`INSERT INTO acc.Etapas (eventId, temporada_id, etapa, stageName, startDate, trackName, carGroup, multiplicador_pts_etapa, ambient_temp, cloud_level, rain_percent, weather_randomness, mandatory_pit, mandatory_tyre_change, mandatory_refueling, fixed_time_pit) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14) RETURNING id`, 
-            [Event.eventId, Event.temporada, Event.etapa, Event.serverName, Event.start_date, Event.CfgEventFile.track, Event.carGroup, Event.multiplicador_pts_etapa, Event.CfgEventFile.ambientTemp, Event.CfgEventFile.cloudLevel, Event.CfgEventFile.rain, Event.CfgEventFile.weatherRandomness, Event.mandatory_pit, Event.mandatory_tyre_change, Event.mandatory_refueling, Event.fixed_time_pit]);
+        const eventoId = await client.query(`INSERT INTO acc.Etapas (eventId, temporada_id, etapa, stageName, startDate, trackName, carGroup, multiplicador_pts_etapa, ambient_temp, cloud_level, rain_percent, weather_randomness, mandatoryPitstopCount, isMandatoryPitstopTyreChangeRequired, isMandatoryPitstopRefuellingRequired, isRefuellingTimeFixed, tyreSetCount, isRefuellingAllowedInRace) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18) RETURNING id`, 
+                                        [Event.eventId, Event.temporada, Event.etapa, Event.serverName, Event.start_date, Event.CfgEventFile.track, Event.carGroup, Event.multiplicador_pts_etapa, Event.CfgEventFile.ambientTemp, Event.CfgEventFile.cloudLevel, Event.CfgEventFile.rain, Event.CfgEventFile.weatherRandomness, Event.eventRules.mandatoryPitstopCount, Event.eventRules.isMandatoryPitstopTyreChangeRequired, Event.eventRules.isMandatoryPitstopRefuellingRequired, Event.eventRules.isRefuellingTimeFixed, Event.eventRules.tyreSetCount, Event.eventRules.isRefuellingAllowedInRace]);
         if (eventoId) {
             console.log(`Evento inserido com sucesso em acc.Etapas, id: ${eventoId}`);
         }
@@ -183,7 +192,7 @@ async function InsertEventOnDb(Event) {
         return eventoId;
 
     } catch (error) {
-
+        console.log('[InsertEventOnDb] Excessão ao tentar inserir: ', error);
     }
 }
 
@@ -193,15 +202,23 @@ function startHttp() {
 
     // Função para atualizar o endpoint do redis
     async function UpdateRedisEndpoint(){
-        const options = { hostname: '185.101.104.129', port: 8083, path: '/update_get_eventos', method: 'POST', headers: { 'Content-Type': 'application/json', }};
 
-        const req = http.request(options, (res) => {
-            let responseData = '';
-            res.on('data', (chunck) => { responseData += chunck });
-            res.on('end', () => { console.log('[UpdateRedisEndpoint] Response:', responseData) });
-        });
+        try {
+            console.log('[UpdateRedisEndpoint] Realizando update no endpoint /update_get_eventos');
 
-        req.on('error', (e) => { console.error(`[UpdateRedisEndpoint] Erro: ${e.message}`); });
+            const options = { hostname: '185.101.104.129', port: 8083, path: '/update_get_eventos', method: 'POST', headers: { 'Content-Type': 'application/json', }};
+
+            const req = http.request(options, (res) => {
+                let responseData = '';
+                res.on('data', (chunck) => { responseData += chunck });
+                res.on('end', () => { console.log('[UpdateRedisEndpoint] Response:', responseData) });
+            });
+
+            req.on('error', (e) => { console.error(`[UpdateRedisEndpoint] Erro: ${e.message}`); });
+            req.end(); // Finaliza a requisição
+        } catch (error) {
+            console.log('[UpdateRedisEndpoint] Excessão => ', error);
+        }
     };
 
     // Aqui, você cria uma rota para cada eventId
@@ -230,10 +247,10 @@ function startHttp() {
 
                 console.log('[/receive_event] Event: ', JSON.stringify(Event));
 
-                await InsertEventOnDb(Event);
-                await UpdateRedisEndpoint();
-                await makeEventsData(Event);
-                createServerMonitor(Event);
+                await InsertEventOnDb(Event); console.log('passed InsertEventOnDb()');
+                await UpdateRedisEndpoint(); console.log('passed UpdateRedisEndpoint()');
+                await makeEventsData(Event); console.log('passed makeEventsData()');
+                createServerMonitor(Event); console.log('passed createServerMonitor()');
                 res.json({ message: '[/receive_event] evento recebido com sucesso' });
             } else {
                 res.json({ error: '[/receive_event] erro ao receber os dados do evento, verifique o JSON' });
@@ -278,15 +295,18 @@ async function makeEventsData(Event) {
     Event.QueueMsgs = []; // Inicializar fila de mensagens para o evento
     Event.webSocket_clients = []; // Inicializar a lista de clientes conectados via WebSocket
 
-    const { eventId, start_date, CfgEventFile } = Event;
+    const { eventId, start_date, CfgEventFile, eventRules } = Event;
 
-    console.log(`eventId: ${eventId} | start_date: ${start_date} | CfgEventFile: ${CfgEventFile}`);
+    console.log(`eventId: ${eventId} | start_date: ${start_date} | CfgEventFile: ${CfgEventFile} | eventRules: ${eventRules}`);
 
     // 1. Copiar a pasta do servidor base
     const serverDir = await copyServerBase(eventId);
 
     // 2. Atualizar o arquivo event.json
     await updateEventJson(serverDir, CfgEventFile);
+
+    // 3. Atualizar o arquivo eventRules.json
+    await updateEventRules(serverDir, eventRules);
 
     // 3. Calcular o tempo de início
     const startTime = calculateStartTime(start_date);

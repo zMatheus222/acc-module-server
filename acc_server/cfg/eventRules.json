@@ -6,7 +6,7 @@
     "maxTotalDrivingTime": -1,
     "maxDriversCount": 1,
     "tyreSetCount": 50,
-    "isRefuellingAllowedInRace": false,
+    "isRefuellingAllowedInRace": true,
     "isRefuellingTimeFixed": false,
     "isMandatoryPitstopRefuellingRequired": true,
     "isMandatoryPitstopTyreChangeRequired": true,
