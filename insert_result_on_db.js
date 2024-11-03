@@ -45,18 +45,21 @@ async function insertIntoDatabase(sessionData, Event, sessionType) {
         acc.sessoes:
         "id"	"etapa_id"	"sessiontype"	"dayofweekend"	"hourofday"	"sessiondurationminutes"	"timemultiplier"
           1	         1	          "P"	           1	        10             	60	                       1
-        */
-
-        // Inserir dados na tabela acc.sessoes e retornar id da sessão inserida
+          
+        Inserir dados na tabela acc.sessoes e retornar id da sessão inserida
         const resultSessao = await client.query(
             `INSERT INTO acc.sessoes (etapa_id, sessiontype, dayofweekend, hourofday, sessiondurationminutes, timemultiplier)
             VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`, 
             [parseInt(Event.etapa, 10), sessionType, parseInt(Session.dayOfWeekend, 10), parseInt(Session.hourOfDay, 10), parseInt(Session.sessionDurationMinutes, 10), parseFloat(Session.timeMultiplier)]
         );
+        */
+
+        console.log(`[insertIntoDatabase] Buscando acc.sessão referente a etapa_primary_id: ${etapa_primary_id}...`);
+        const resultSessao = await client.query(`SELECT id FROM acc.sessoes WHERE id = ${etapa_primary_id} AND sessiontype = ${sessionType}`);
         
         const id_sessao = resultSessao.rows[0].id;
 
-        console.log('[insertIntoDatabase] Dados da sessão inseridos com sucesso.');
+        console.log(`[insertIntoDatabase] id da sessão encontrado: ${id_sessao}`);
 
         // Verifique se leaderBoardLines existe e é um array
         if (!Array.isArray(sessionData.sessionResult.leaderBoardLines)) {
@@ -136,11 +139,11 @@ function findResultFile(directory, sessionType) {
 // Função principal para ler o arquivo de resultado e inserir no banco
 async function insertResult(Event, sessionType) {
 
-    console.log('[insertResult] Iniciado! Event: ', Event);
+    console.log('[insertResult] Iniciado! Event: ', Event, " sessionType: ", sessionType);
 
     // Verifique se eventId existe e não está undefined
     if (!Event.eventId) {
-        console.error('[insertResult] eventId não definido em Event:', JSON.stringify(Event));
+        console.error(`[insertResult] ${Event.eventId} não definido em Event:`, JSON.stringify(Event));
         return;
     }
 
@@ -188,10 +191,10 @@ async function UpdateRedisEndpoint(){
 };
 
 // Obter o caminho do arquivo e o tipo de sessão dos argumentos
-const [tempFilePath, sessionType] = process.argv.slice(2);
+const [tempFilePath, sessionType, etapa_primary_id] = process.argv.slice(3);
 
 if (tempFilePath && sessionType) {
-    console.log('[insert_result_on_db.js] Passed if (tempFilePath && sessionType)');
+    console.log(`[insert_result_on_db.js] Passed if (${tempFilePath} && ${sessionType})`);
 
     try {
         // Ler o conteúdo do arquivo temporário

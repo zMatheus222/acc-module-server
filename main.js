@@ -59,7 +59,15 @@ async function updateEventRules(serverDir, EventRules) {
 
     // Sobrescrever arquivo eventRules.json
     const updatedEventRules = JSON.stringify(EventRules, null, 2);
-    await fs.promises.writeFile(EventRulesJsonPath, updatedEventRules, 'utf-8')
+    await fs.promises.writeFile(EventRulesJsonPath, updatedEventRules, 'utf-8');
+}
+
+async function updateSettings(serverDir, Settings) {
+    const SettingsJsonPath = path.join(serverDir, 'cfg', 'settings.json');
+
+    // Sobrescrever arquivo Settings.json
+    const updatedSettings = JSON.stringify(Settings, null, 2);
+    await fs.promises.writeFile(SettingsJsonPath, updatedSettings, 'utf-8');
 }
 
 // Calcular o tempo restante até o início do evento
@@ -76,8 +84,8 @@ function runInsertResultScript(Event, sessionType) {
 
     // Salvar o objeto Event em um arquivo temporário
     fs.writeFileSync(tempFilePath, JSON.stringify(Event));
-    
-    const command = `node insert_result_on_db.js "${tempFilePath}" ${sessionType}`;
+
+    const command = `node insert_result_on_db.js "${tempFilePath}" ${sessionType} ${etapa_primary_id}`;
 
     //console.log(`Executando node insert_result_on_db.js com sessionType: ${sessionType}\nEvent:\n${JSON.stringify(Event)}`);
 
@@ -135,7 +143,7 @@ function handleOutput(output, Event) {
 function startServer(serverDir, Event) {
     const exePath = path.join(__dirname, 'acc_server', 'accServer.exe'); // Caminho do executável do servidor
     console.log(`Iniciando servidor do ACC em ${serverDir}`);
-    
+
     const serverProcess = spawn(exePath, { cwd: serverDir }); // Inicie o executável no diretório do evento
     serverProcesses.push(serverProcess);
 
@@ -183,30 +191,51 @@ async function InsertEventOnDb(Event) {
     try {
         await client.connect();
 
-        const eventoId = await client.query(`INSERT INTO acc.Etapas (eventId, temporada_id, etapa, stageName, startDate, trackName, carGroup, multiplicador_pts_etapa, ambient_temp, cloud_level, rain_percent, weather_randomness, mandatoryPitstopCount, isMandatoryPitstopTyreChangeRequired, isMandatoryPitstopRefuellingRequired, isRefuellingTimeFixed, tyreSetCount, isRefuellingAllowedInRace) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18) RETURNING id`, 
-                                        [Event.eventId, Event.temporada, Event.etapa, Event.serverName, Event.start_date, Event.CfgEventFile.track, Event.carGroup, Event.multiplicador_pts_etapa, Event.CfgEventFile.ambientTemp, Event.CfgEventFile.cloudLevel, Event.CfgEventFile.rain, Event.CfgEventFile.weatherRandomness, Event.eventRules.mandatoryPitstopCount, Event.eventRules.isMandatoryPitstopTyreChangeRequired, Event.eventRules.isMandatoryPitstopRefuellingRequired, Event.eventRules.isRefuellingTimeFixed, Event.eventRules.tyreSetCount, Event.eventRules.isRefuellingAllowedInRace]);
-        if (eventoId) {
-            console.log(`Evento inserido com sucesso em acc.Etapas, id: ${eventoId}`);
+        const resultEtapaInsert = await client.query(`INSERT INTO acc.Etapas (eventId, temporada_id, etapa, stageName, startDate, trackName, carGroup, multiplicador_pts_etapa, ambient_temp, cloud_level, rain_percent, weather_randomness, mandatoryPitstopCount, isMandatoryPitstopTyreChangeRequired, isMandatoryPitstopRefuellingRequired, isRefuellingTimeFixed, tyreSetCount, isRefuellingAllowedInRace) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18) RETURNING id`,
+            [Event.eventId, Event.temporada, Event.etapa, Event.serverName, Event.start_date, Event.CfgEventFile.track, Event.carGroup, Event.multiplicador_pts_etapa, Event.CfgEventFile.ambientTemp, Event.CfgEventFile.cloudLevel, Event.CfgEventFile.rain, Event.CfgEventFile.weatherRandomness, Event.eventRules.mandatoryPitstopCount, Event.eventRules.isMandatoryPitstopTyreChangeRequired, Event.eventRules.isMandatoryPitstopRefuellingRequired, Event.eventRules.isRefuellingTimeFixed, Event.eventRules.tyreSetCount, Event.eventRules.isRefuellingAllowedInRace]);
+        const etapaId = resultEtapaInsert.rows[0].id;
+        if (resultEtapaInsert) {
+            console.log(`Evento inserido com sucesso em acc.Etapas, id: ${etapaId}`);
         }
 
-        return eventoId;
+        //console.log("Tipo e valor dos dados da sessão:");
+        //console.log("resultEtapaInsert:", "typeof:", typeof resultEtapaInsert, "valor:", resultEtapaInsert);
+
+        for (session of Event.CfgEventFile.sessions) {
+            // console.log("session.sessionType:", "typeof:", typeof session.sessionType, "valor:", session.sessionType);
+            // console.log("session.dayOfWeekend:", "typeof:", typeof session.dayOfWeekend, "valor:", session.dayOfWeekend);
+            // console.log("session.hourOfDay:", "typeof:", typeof session.hourOfDay, "valor:", session.hourOfDay);
+            // console.log("session.sessionDurationMinutes:", "typeof:", typeof session.sessionDurationMinutes, "valor:", session.sessionDurationMinutes);
+            // console.log("session.timeMultiplier:", "typeof:", typeof session.timeMultiplier, "valor:", session.timeMultiplier);
+            // console.log("session.recompensas_rpo:", "typeof:", typeof session.recompensas_rpo, "valor:", session.recompensas_rpo);
+            // inserindo sessões:
+            await client.query(
+                `INSERT INTO acc.sessoes (etapa_id, sessiontype, dayofweekend, hourofday, sessiondurationminutes, timemultiplier, recompensas_rpo)
+                VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id`,
+                [parseInt(etapaId, 10), session.sessionType, parseInt(session.dayOfWeekend, 10), parseInt(session.hourOfDay, 10), parseInt(session.sessionDurationMinutes, 10), parseFloat(session.timeMultiplier), parseInt(session.recompensas_rpo, 10)]
+            );
+        }
+
+        return etapaId;
 
     } catch (error) {
         console.log('[InsertEventOnDb] Excessão ao tentar inserir: ', error);
     }
 }
 
+let etapa_primary_id = -1;
+
 // Inicializar o servidor HTTP para gerenciar os clientes WebSocket
 function startHttp() {
     app.use(express.static(path.join(__dirname, 'public')));
 
     // Função para atualizar o endpoint do redis
-    async function UpdateRedisEndpoint(){
+    async function UpdateRedisEndpoint() {
 
         try {
             console.log('[UpdateRedisEndpoint] Realizando update no endpoint /update_get_eventos');
 
-            const options = { hostname: '185.101.104.129', port: 8083, path: '/update_get_eventos', method: 'POST', headers: { 'Content-Type': 'application/json', }};
+            const options = { hostname: '185.101.104.129', port: 8083, path: '/update_get_eventos', method: 'POST', headers: { 'Content-Type': 'application/json', } };
 
             const req = http.request(options, (res) => {
                 let responseData = '';
@@ -247,19 +276,19 @@ function startHttp() {
 
                 console.log('[/receive_event] Event: ', JSON.stringify(Event));
 
-                await InsertEventOnDb(Event); console.log('passed InsertEventOnDb()');
+                etapa_primary_id = await InsertEventOnDb(Event); console.log('passed InsertEventOnDb()');
                 await UpdateRedisEndpoint(); console.log('passed UpdateRedisEndpoint()');
                 await makeEventsData(Event); console.log('passed makeEventsData()');
                 createServerMonitor(Event); console.log('passed createServerMonitor()');
-                res.json({ message: '[/receive_event] evento recebido com sucesso' });
+                res.json({ message: '[/receive_event] evento recebido com sucesso', etapa_primary_id: etapa_primary_id });
             } else {
                 res.json({ error: '[/receive_event] erro ao receber os dados do evento, verifique o JSON' });
             }
         }
-        catch(err) {
+        catch (err) {
             console.log('[/receive_event] Exception: Erro ao tentar receber os dados do evento.');
         }
-        
+
     });
 
     // Endpoint que recebe dados de um evento
@@ -275,10 +304,10 @@ function startHttp() {
                 res.json({ error: '[/receive_event] erro ao receber os dados do preset, verifique o JSON' });
             }
         }
-        catch(err) {
+        catch (err) {
             console.log('[/receive_event] Exception: Erro ao tentar receber os dados do evento.');
         }
-        
+
     });
 
 
@@ -295,7 +324,7 @@ async function makeEventsData(Event) {
     Event.QueueMsgs = []; // Inicializar fila de mensagens para o evento
     Event.webSocket_clients = []; // Inicializar a lista de clientes conectados via WebSocket
 
-    const { eventId, start_date, CfgEventFile, eventRules } = Event;
+    const { eventId, start_date, CfgEventFile, eventRules, settings } = Event;
 
     console.log(`eventId: ${eventId} | start_date: ${start_date} | CfgEventFile: ${CfgEventFile} | eventRules: ${eventRules}`);
 
@@ -308,7 +337,10 @@ async function makeEventsData(Event) {
     // 3. Atualizar o arquivo eventRules.json
     await updateEventRules(serverDir, eventRules);
 
-    // 3. Calcular o tempo de início
+    // 4. Atualizar o arquivo settings.json
+    await updateSettings(serverDir, settings);
+
+    // 5. Calcular o tempo de início
     const startTime = calculateStartTime(start_date);
     const safetyMargin = 1000;
 

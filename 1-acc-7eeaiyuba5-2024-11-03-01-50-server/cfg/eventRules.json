@@ -1,9 +1,9 @@
 {
-  "mandatoryPitstopCount": "1",
-  "tyreSetCount": "15",
+  "mandatoryPitstopCount": 1,
+  "tyreSetCount": 1,
   "isRefuellingAllowedInRace": true,
-  "isRefuellingTimeFixed": false,
-  "isMandatoryPitstopTyreChangeRequired": false,
+  "isRefuellingTimeFixed": true,
+  "isMandatoryPitstopTyreChangeRequired": true,
   "isMandatoryPitstopRefuellingRequired": true,
   "qualifyStandingType": 1,
   "pitWindowLengthSec": -1,
