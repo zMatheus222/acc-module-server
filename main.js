@@ -1,12 +1,13 @@
-const { spawn } = require('child_process');
+const apm = require('./apm');
 const path = require('path');
 const fs = require('fs');
 const express = require('express');
 const app = express();
-const { exec } = require('child_process');
 const cors = require('cors');
-const { Client } = require('pg');
 const http = require('http');
+const { exec } = require('child_process');
+const { spawn } = require('child_process');
+const { Client } = require('pg');
 
 // Middleware para parsing do JSON no corpo da requisição
 app.use(express.json());
@@ -63,10 +64,18 @@ async function updateEventRules(serverDir, EventRules) {
 }
 
 async function updateSettings(serverDir, Settings) {
+
+    console.log(`[updateSettings] Called! | serverDir: ${serverDir} | Settings: ${JSON.stringify(Settings)}`);
+
     const SettingsJsonPath = path.join(serverDir, 'cfg', 'settings.json');
+
+    console.log(`[updateSettings] Called! | SettingsJsonPath: ${SettingsJsonPath}`);
 
     // Sobrescrever arquivo Settings.json
     const updatedSettings = JSON.stringify(Settings, null, 2);
+
+    console.log(`[updateSettings] Called! | updatedSettings: ${updatedSettings}`);
+
     await fs.promises.writeFile(SettingsJsonPath, updatedSettings, 'utf-8');
 }
 
@@ -176,7 +185,7 @@ function sendMessagesToClient(Event) {
 
 async function InsertEventOnDb(Event) {
 
-    console.log('[InsertEventOnDb] Inserindo Event no banco acc.Etapas, ', JSON.stringify(Event));
+    console.log(`[InsertEventOnDb] Inserindo Event no banco acc.Etapas...`);
 
     const config = JSON.parse(fs.readFileSync('./config.json'));
 
@@ -191,11 +200,24 @@ async function InsertEventOnDb(Event) {
     try {
         await client.connect();
 
-        const resultEtapaInsert = await client.query(`INSERT INTO acc.Etapas (eventId, temporada_id, etapa, stageName, startDate, trackName, carGroup, multiplicador_pts_etapa, ambient_temp, cloud_level, rain_percent, weather_randomness, mandatoryPitstopCount, isMandatoryPitstopTyreChangeRequired, isMandatoryPitstopRefuellingRequired, isRefuellingTimeFixed, tyreSetCount, isRefuellingAllowedInRace) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18) RETURNING id`,
-            [Event.eventId, Event.temporada, Event.etapa, Event.serverName, Event.start_date, Event.CfgEventFile.track, Event.carGroup, Event.multiplicador_pts_etapa, Event.CfgEventFile.ambientTemp, Event.CfgEventFile.cloudLevel, Event.CfgEventFile.rain, Event.CfgEventFile.weatherRandomness, Event.eventRules.mandatoryPitstopCount, Event.eventRules.isMandatoryPitstopTyreChangeRequired, Event.eventRules.isMandatoryPitstopRefuellingRequired, Event.eventRules.isRefuellingTimeFixed, Event.eventRules.tyreSetCount, Event.eventRules.isRefuellingAllowedInRace]);
+        // se esta criando a temporada o id dela não existe ainda, pegar no returning id.
+        let created_temporada_id = -404;
+
+        if (Event.new_temporada.temporada_nome !== "") {
+            console.log(`[InsertEventOnDb] Encontrado nova temporada: ${Event.new_temporada.temporada_nome}, adicionando ao banco.`);
+            created_temporada_id = await createTemporada(client, Event.new_temporada);
+        }
+
+        const resultEtapaInsert = await client.query(`INSERT INTO acc.Etapas (eventId, temporada_id, etapa, stageName, startDate, trackName, carGroup, multiplicador_pts_etapa, ambient_temp, cloud_level, rain_percent, weather_randomness, mandatoryPitstopCount, isMandatoryPitstopTyreChangeRequired, isMandatoryPitstopRefuellingRequired, isRefuellingTimeFixed, tyreSetCount, isRefuellingAllowedInRace) VALUES
+                ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18) RETURNING id`,
+                    [Event.eventId, created_temporada_id, Event.etapa, Event.serverName, Event.start_date, Event.CfgEventFile.track, Event.carGroup,
+                        Event.multiplicador_pts_etapa, Event.CfgEventFile.ambientTemp, Event.CfgEventFile.cloudLevel, Event.CfgEventFile.rain, Event.CfgEventFile.weatherRandomness,
+                        Event.eventRules.mandatoryPitstopCount, Event.eventRules.isMandatoryPitstopTyreChangeRequired, Event.eventRules.isMandatoryPitstopRefuellingRequired,
+                        Event.eventRules.isRefuellingTimeFixed, Event.eventRules.tyreSetCount, Event.eventRules.isRefuellingAllowedInRace]);
+                        
         const etapaId = resultEtapaInsert.rows[0].id;
         if (resultEtapaInsert) {
-            console.log(`Evento inserido com sucesso em acc.Etapas, id: ${etapaId}`);
+            console.log(`[InsertEventOnDb] Evento inserido com sucesso em acc.Etapas, id: ${etapaId}`);
         }
 
         //console.log("Tipo e valor dos dados da sessão:");
@@ -220,6 +242,53 @@ async function InsertEventOnDb(Event) {
 
     } catch (error) {
         console.log('[InsertEventOnDb] Excessão ao tentar inserir: ', error);
+        return error;
+    }
+}
+
+async function createTemporada(client, tn) {
+
+    // Primeiro, vamos buscar o maior ID existente
+    const maxIdQuery = `SELECT COALESCE(MAX(id), -1) as max_id FROM base.temporadas`;
+    const maxIdResult = await client.query(maxIdQuery);
+    const newId = maxIdResult.rows[0].max_id + 1;
+
+    const verifySelect = `SELECT nome, id FROM base.temporadas WHERE nome = $1  `;
+    const verify_res = await client.query(verifySelect, [tn.temporada_nome]);
+    if (verify_res.rows.length > 0) {
+        return `[createTemporada] Temporada com o nome ${tn.temporada_nome} já existe.`;
+    }
+    
+    // Query de inserção usando placeholders ($1, $2, etc.)
+    const insertQuery = `
+        INSERT INTO base.temporadas (id, nome, simulador, data_inicio, data_fim)
+        VALUES ($1, $2, $3, $4, $5)
+        RETURNING id    
+    `;
+
+    try {
+        // Executar a query de inserção com os valores
+        const t_values = [
+            newId,
+            tn.temporada_nome,
+            tn.temporada_simulador,
+            tn.temporada_data_inicio.replace('T', ' '),
+            tn.temporada_data_fim.replace('T', ' ')
+        ];
+
+        console.log(`[createTemporada] Executando client.query com o t_values: ${t_values}\n`);
+
+        const result = await client.query(insertQuery, t_values);
+
+        // Obter o ID retornado
+        const temporada_id = result.rows[0]?.id;
+        if (temporada_id) {
+            console.log(`[createTemporada] Temporada ${temporada_id} criada com sucesso!`);
+            return temporada_id;
+        }
+    } catch (err) {
+        console.log("Erro ao criar a temporada: " + err.message);
+        return -2;
     }
 }
 
@@ -274,9 +343,15 @@ function startHttp() {
 
                 const Event = req.body;
 
-                console.log('[/receive_event] Event: ', JSON.stringify(Event));
+                console.log(`[receive_event] Event: ${JSON.stringify(Event)}\n`);
 
                 etapa_primary_id = await InsertEventOnDb(Event); console.log('passed InsertEventOnDb()');
+                if (etapa_primary_id instanceof Error) {
+                    throw etapa_primary_id; // Re-throw the error if it's an Error object
+                }
+                if (typeof etapa_primary_id !== 'number' || isNaN(etapa_primary_id)) {
+                    throw new Error('InsertEventOnDb falhou em retornar um ID válido');
+                }
                 await UpdateRedisEndpoint(); console.log('passed UpdateRedisEndpoint()');
                 await makeEventsData(Event); console.log('passed makeEventsData()');
                 createServerMonitor(Event); console.log('passed createServerMonitor()');
@@ -326,7 +401,13 @@ async function makeEventsData(Event) {
 
     const { eventId, start_date, CfgEventFile, eventRules, settings } = Event;
 
-    console.log(`eventId: ${eventId} | start_date: ${start_date} | CfgEventFile: ${CfgEventFile} | eventRules: ${eventRules}`);
+    console.log(
+        `\n----> Event Data: ${JSON.stringify(
+          { eventId, start_date, CfgEventFile, eventRules, settings },
+          null,
+          2
+        )}`
+      );
 
     // 1. Copiar a pasta do servidor base
     const serverDir = await copyServerBase(eventId);
