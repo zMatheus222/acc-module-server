@@ -148,6 +148,84 @@ function handleOutput(output, Event) {
     });
 }
 
+async function registerDriversOnEntrylist() {
+    
+    console.log('[registerDriversOnEntrylist] Called!');
+
+    try {
+
+        const API_URL = process.env.API_URL || "http://185.101.104.129:8084";
+
+        // esta api faz uma requisição para fazer um select na tabela acc.piloto_temporada_etapa;
+        const [piloto_temporada_etapa] = await Promise.all([
+            app.get(`${API_URL}/piloto_temporada_etapa`),
+        ]);
+
+        if (!Array.isArray(piloto_temporada_etapa.data)) {
+            throw new Error("[registerDriversOnEntrylist] Dados de piloto_temporada_etapa inválidos");
+        }
+
+        const EntryListDrivers = {
+            "entries": []
+        };
+
+        for (let i = 0; i < piloto_temporada_etapa.data.length; i++){
+
+            const Dd = piloto_temporada_etapa.data[i];
+
+            const driver_obj = {
+                "drivers": [
+                    {
+                        "firstName": Dd.nome,
+                        "lastName": Dd.sobrenome,
+                        "shortName": Dd.nome_curto,
+                        "nationality": 17,
+                        "driverCategory": 1,
+                        "helmetTemplateKey": 503,
+                        "helmetBaseColor": 17,
+                        "helmetDetailColor": 243,
+                        "helmetMaterialType": 0,
+                        "helmetGlassColor": 0,
+                        "helmetGlassMetallic": 0.0,
+                        "glovesTemplateKey": 200,
+                        "suitTemplateKey": 504,
+                        "suitDetailColor1": 243,
+                        "suitDetailColor2": 341,
+                        "playerID": Dd.steam_guid,
+                        "aiSkill": 100,
+                        "aiAggro": 50,
+                        "aiRainSkill": 50,
+                        "aiConsistency": 50
+                    }
+                ],
+                "customCar": "",
+                "raceNumber": Dd.numero_carro,
+                "defaultGridPosition": 7,
+                "forcedCarModel": -1,
+                "overrideDriverInfo": 0,
+                "isServerAdmin": 0,
+                "overrideCarModelForCustomCar": 1,
+                "configVersion": 1
+            }
+
+            EntryListDrivers.entries.push(driver_obj);
+            
+        }
+
+        console.log(`[registerDriversOnEntrylist] entrylist a ser adicionada: EntryListDrivers: ${EntryListDrivers}`);
+
+        const EntrylistJsonPath = path.join(serverDir, 'cfg', 'entrylist.json');
+
+        const updatedEntrylist = JSON.stringify(EntryListDrivers, null, 4);
+
+        await fs.promises.writeFile(EntrylistJsonPath, updatedEntrylist, 'utf-8');
+        
+    } catch (err) {
+        console.error('[registerDriversOnEntrylist] Erro ao tentar inserir pilotos na Entrylist: ', err);
+        throw err;
+    }
+}
+
 // Função para iniciar o servidor e capturar a saída
 function startServer(serverDir, Event) {
     const exePath = path.join(__dirname, 'acc_server', 'accServer.exe'); // Caminho do executável do servidor
@@ -187,30 +265,34 @@ async function InsertEventOnDb(Event) {
 
     console.log(`[InsertEventOnDb] Inserindo Event no banco acc.Etapas...`);
 
-    const config = JSON.parse(fs.readFileSync('./config.json'));
+        const config = JSON.parse(fs.readFileSync('./config.json'));
 
-    const client = new Client({
-        user: config.cfgs.postgresql.user,
-        host: config.cfgs.postgresql.hostaddr,
-        database: config.cfgs.postgresql.dbname,
-        password: config.cfgs.postgresql.password,
-        port: config.cfgs.postgresql.port,
-    });
-
+        const client = new Client({
+            user: config.cfgs.postgresql.user,
+            host: config.cfgs.postgresql.hostaddr,
+            database: config.cfgs.postgresql.dbname,
+            password: config.cfgs.postgresql.password,
+            port: config.cfgs.postgresql.port,
+        });
+    
     try {
+    
         await client.connect();
+        await client.query('BEGIN');
 
         // se esta criando a temporada o id dela não existe ainda, pegar no returning id.
-        let created_temporada_id = -404;
+        let temporada_id = -404;
 
-        if (Event.new_temporada.temporada_nome !== "") {
+        if (Event.new_temporada && Event.new_temporada.temporada_nome !== "") {
             console.log(`[InsertEventOnDb] Encontrado nova temporada: ${Event.new_temporada.temporada_nome}, adicionando ao banco.`);
-            created_temporada_id = await createTemporada(client, Event.new_temporada);
+            temporada_id = await createTemporada(client, Event.new_temporada);
+        } else {
+            temporada_id = Event.temporada;
         }
 
-        const resultEtapaInsert = await client.query(`INSERT INTO acc.Etapas (eventId, temporada_id, etapa, stageName, startDate, trackName, carGroup, multiplicador_pts_etapa, ambient_temp, cloud_level, rain_percent, weather_randomness, mandatoryPitstopCount, isMandatoryPitstopTyreChangeRequired, isMandatoryPitstopRefuellingRequired, isRefuellingTimeFixed, tyreSetCount, isRefuellingAllowedInRace) VALUES
-                ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18) RETURNING id`,
-                    [Event.eventId, created_temporada_id, Event.etapa, Event.serverName, Event.start_date, Event.CfgEventFile.track, Event.carGroup,
+        const resultEtapaInsert = await client.query(`INSERT INTO acc.Etapas (eventId, temporada_id, etapa, stageName, startDate, trackName, carGroup, countdowntostart, multiplicador_pts_etapa, ambient_temp, cloud_level, rain_percent, weather_randomness, mandatoryPitstopCount, isMandatoryPitstopTyreChangeRequired, isMandatoryPitstopRefuellingRequired, isRefuellingTimeFixed, tyreSetCount, isRefuellingAllowedInRace) VALUES
+                ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19) RETURNING id`,
+                    [Event.eventId, temporada_id, Event.etapa, Event.settings.serverName, Event.start_date, Event.CfgEventFile.track, Event.settings.carGroup, 'Em Aberto',
                         Event.multiplicador_pts_etapa, Event.CfgEventFile.ambientTemp, Event.CfgEventFile.cloudLevel, Event.CfgEventFile.rain, Event.CfgEventFile.weatherRandomness,
                         Event.eventRules.mandatoryPitstopCount, Event.eventRules.isMandatoryPitstopTyreChangeRequired, Event.eventRules.isMandatoryPitstopRefuellingRequired,
                         Event.eventRules.isRefuellingTimeFixed, Event.eventRules.tyreSetCount, Event.eventRules.isRefuellingAllowedInRace]);
@@ -218,6 +300,14 @@ async function InsertEventOnDb(Event) {
         const etapaId = resultEtapaInsert.rows[0].id;
         if (resultEtapaInsert) {
             console.log(`[InsertEventOnDb] Evento inserido com sucesso em acc.Etapas, id: ${etapaId}`);
+        }
+
+        const queryLiveTable = `INSERT INTO acc.Temporada_Etapas_Lives (id_temporada, id_etapa, numero_etapa, live_url) VALUES ($1, $2, $3, $4)`;
+
+        // Inserir a url da live na tabela 'acc.Temporada_Etapas_Lives'
+        const resultLiveTable = await client.query(queryLiveTable, [temporada_id, etapaId, Event.etapa, Event.live_url]);
+        if(resultLiveTable) {
+            console.log(`[InsertEventOnDb] live_url inserida com sucesso em acc.Temporada_Etapas_Lives`);
         }
 
         //console.log("Tipo e valor dos dados da sessão:");
@@ -231,18 +321,31 @@ async function InsertEventOnDb(Event) {
             // console.log("session.timeMultiplier:", "typeof:", typeof session.timeMultiplier, "valor:", session.timeMultiplier);
             // console.log("session.recompensas_rpo:", "typeof:", typeof session.recompensas_rpo, "valor:", session.recompensas_rpo);
             // inserindo sessões:
-            await client.query(
+            const sessionIdRes = await client.query(
                 `INSERT INTO acc.sessoes (etapa_id, sessiontype, dayofweekend, hourofday, sessiondurationminutes, timemultiplier, recompensas_rpo)
                 VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id`,
                 [parseInt(etapaId, 10), session.sessionType, parseInt(session.dayOfWeekend, 10), parseInt(session.hourOfDay, 10), parseInt(session.sessionDurationMinutes, 10), parseFloat(session.timeMultiplier), parseInt(session.recompensas_rpo, 10)]
             );
+
+            // inserir dados na tabela relacional 'acc.Temporada_Etapas_Sessoes'
+            const session_id = sessionIdRes.rows[0].id;
+
+            const query_Temporada_Etapas_Sessoes = `INSERT INTO acc.Temporada_Etapas_Sessoes (temporada_id, etapa_id, sessao_id) VALUES ($1, $2, $3)`;
+            await client.query(query_Temporada_Etapas_Sessoes, [temporada_id, etapaId, session_id]);
         }
+
+        await client.query('COMMIT');
+        console.log(`[InsertEventOnDb] Todas as operações concluídas com sucesso.`);
 
         return etapaId;
 
     } catch (error) {
-        console.log('[InsertEventOnDb] Excessão ao tentar inserir: ', error);
-        return error;
+        await client.query('ROLLBACK'); // Rollback em caso de erro
+        console.error('[InsertEventOnDb] Excessão ao tentar inserir: ', error);
+        throw error;
+    } finally {
+        console.log('[InsertEventOnDb] [finally] Processo concluído com sucesso! fechando conexão...');
+        await client.end(); // Fechar a conexão
     }
 }
 
@@ -335,7 +438,7 @@ function startHttp() {
             });
         });
     };
-
+    
     // Endpoint que recebe dados de um evento
     app.post('/receive_event', async (req, res) => {
         try {
@@ -366,26 +469,6 @@ function startHttp() {
 
     });
 
-    // Endpoint que recebe dados de um evento
-    app.post('/receive_preset', (req, res) => {
-        try {
-            if (req.body) {
-
-                const Preset = req.body;
-                console.log('[/receive_event] Preset: ', JSON.stringify(Preset));
-
-                res.json({ message: '[/receive_event] preset recebido com sucesso' });
-            } else {
-                res.json({ error: '[/receive_event] erro ao receber os dados do preset, verifique o JSON' });
-            }
-        }
-        catch (err) {
-            console.log('[/receive_event] Exception: Erro ao tentar receber os dados do evento.');
-        }
-
-    });
-
-
     app.listen(port, () => {
         console.log(`[acc-module-server] started on port: ${port}`);
     });
@@ -401,13 +484,11 @@ async function makeEventsData(Event) {
 
     const { eventId, start_date, CfgEventFile, eventRules, settings } = Event;
 
-    console.log(
-        `\n----> Event Data: ${JSON.stringify(
+    console.log(`\n----> Event Data: ${JSON.stringify(
           { eventId, start_date, CfgEventFile, eventRules, settings },
-          null,
-          2
+          null, 2
         )}`
-      );
+    );
 
     // 1. Copiar a pasta do servidor base
     const serverDir = await copyServerBase(eventId);
@@ -427,7 +508,8 @@ async function makeEventsData(Event) {
 
     if (startTime > safetyMargin) {
         console.log(`Servidor ${eventId} será iniciado em ${startTime / 1000} segundos`);
-        setTimeout(() => {
+        setTimeout( async () => {
+            await registerDriversOnEntrylist();
             startServer(serverDir, Event);
             sendMessagesToClient(Event);
         }, startTime);

@@ -1,0 +1,19 @@
+0: Server starting with version 256
+0: Starting server Etapa 1 - SACO DE TARTARUGA
+0: Joining during race is allowed
+0: FileToStruct cfg/eventRules.json
+0: Translated realtime interval hzToMiliseconds(18)=54
+
+0: SessionManager::randomizeGreenFlagTriggers: s:0.890000 e:0.950000 r:0.938173
+0: Track barcelona was set and updated
+0: Event changed
+0: Reading custom event rules
+0: FileToStruct cfg/eventRules.json
+0: FileToStruct cfg/assistRules.json
+0: SessionManager::randomizeGreenFlagTriggers: s:0.890000 e:0.950000 r:0.903946
+0: Significant change detected, updating lobby (1|1)
+0: Resetting weekend to friday night
+0: Reset time to friday night: 0 -> 0
+0: Reset time to first session: 0 -> 122400
+0: SessionManager::randomizeGreenFlagTriggers: s:0.890000 e:0.950000 r:0.937949
+0: Listening to TCP 9601 | UDP 9601
