@@ -290,7 +290,7 @@ async function InsertEventOnDb(Event) {
             temporada_id = Event.temporada;
         }
 
-        const resultEtapaInsert = await client.query(`INSERT INTO acc.Etapas (eventId, temporada_id, etapa, stageName, startDate, trackName, carGroup, countdowntostart, multiplicador_pts_etapa, ambient_temp, cloud_level, rain_percent, weather_randomness, mandatoryPitstopCount, isMandatoryPitstopTyreChangeRequired, isMandatoryPitstopRefuellingRequired, isRefuellingTimeFixed, tyreSetCount, isRefuellingAllowedInRace) VALUES
+        const resultEtapaInsert = await client.query(`INSERT INTO acc.Etapas (eventId, temporada_id, etapa, stageName, startDate, trackName, carGroup, status, multiplicador_pts_etapa, ambient_temp, cloud_level, rain_percent, weather_randomness, mandatoryPitstopCount, isMandatoryPitstopTyreChangeRequired, isMandatoryPitstopRefuellingRequired, isRefuellingTimeFixed, tyreSetCount, isRefuellingAllowedInRace) VALUES
                 ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19) RETURNING id`,
                     [Event.eventId, temporada_id, Event.etapa, Event.settings.serverName, Event.start_date, Event.CfgEventFile.track, Event.settings.carGroup, 'Em Aberto',
                         Event.multiplicador_pts_etapa, Event.CfgEventFile.ambientTemp, Event.CfgEventFile.cloudLevel, Event.CfgEventFile.rain, Event.CfgEventFile.weatherRandomness,
@@ -336,6 +336,8 @@ async function InsertEventOnDb(Event) {
 
         await client.query('COMMIT');
         console.log(`[InsertEventOnDb] Todas as operações concluídas com sucesso.`);
+
+        console.log('Atualizando endpoints do redis:');
 
         return etapaId;
 
@@ -397,30 +399,53 @@ async function createTemporada(client, tn) {
 
 let etapa_primary_id = -1;
 
+async function makeRequest(path) {
+    
+    return new Promise((resolve, reject) => {
+        const options = {
+            hostname: '185.101.104.129',
+            port: 8083,
+            path: path,
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        };
+
+        const req = http.request(options, (res) => {
+            let responseData = '';
+            res.on('data', (chunk) => { responseData += chunk });
+            res.on('end', () => {
+                console.log(`[UpdateRedisEndpoint] Response for ${path}:`, responseData);
+                resolve(responseData);
+            });
+        });
+
+        req.on('error', (e) => {
+            console.error(`[UpdateRedisEndpoint] Erro para ${path}: ${e.message}`);
+            reject(e);
+        });
+
+        req.end(); // Finaliza a requisição
+    });
+}
+
 // Inicializar o servidor HTTP para gerenciar os clientes WebSocket
 function startHttp() {
     app.use(express.static(path.join(__dirname, 'public')));
 
     // Função para atualizar o endpoint do redis
     async function UpdateRedisEndpoint() {
-
         try {
-            console.log('[UpdateRedisEndpoint] Realizando update no endpoint /update_get_eventos');
-
-            const options = { hostname: '185.101.104.129', port: 8083, path: '/update_get_eventos', method: 'POST', headers: { 'Content-Type': 'application/json', } };
-
-            const req = http.request(options, (res) => {
-                let responseData = '';
-                res.on('data', (chunck) => { responseData += chunck });
-                res.on('end', () => { console.log('[UpdateRedisEndpoint] Response:', responseData) });
-            });
-
-            req.on('error', (e) => { console.error(`[UpdateRedisEndpoint] Erro: ${e.message}`); });
-            req.end(); // Finaliza a requisição
+            console.log('[UpdateRedisEndpoint] Realizando update nos endpoints');
+    
+            // Fazendo requisições para dois endpoints
+            await makeRequest('/update_get_eventos');
+            await makeRequest('/update_temporadas'); // Substitua com o caminho do seu segundo endpoint
+    
+            console.log('[UpdateRedisEndpoint] Ambas as requisições foram concluídas');
         } catch (error) {
-            console.log('[UpdateRedisEndpoint] Excessão => ', error);
+            console.log('[UpdateRedisEndpoint] Exceção => ', error);
         }
-    };
+    }
 
     // Aqui, você cria uma rota para cada eventId
     function createServerMonitor(Event) {
