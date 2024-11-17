@@ -8,6 +8,7 @@ const http = require('http');
 const { exec } = require('child_process');
 const { spawn } = require('child_process');
 const { Client } = require('pg');
+const { updateEndpoint } = require('./updateEndpoint');
 
 // Middleware para parsing do JSON no corpo da requisição
 app.use(express.json());
@@ -338,6 +339,21 @@ async function InsertEventOnDb(Event) {
         console.log(`[InsertEventOnDb] Todas as operações concluídas com sucesso.`);
 
         console.log('Atualizando endpoints do redis:');
+
+        const endpointsToUpdate = [
+            'get_eventos',
+            'view_temporadas_resultados_practices',
+            'view_temporadas_resultados_qualys',
+            'view_temporadas_resultados',
+            'view_temporadas_resultados_all',
+            'piloto_temporada_etapa',
+            'view_temporadas_etapas_sessoes',
+            'ranking_piloto_temporada',
+            'ranking_equipe_temporada'
+        ];
+
+        await Promise.all(endpointsToUpdate.map(endpoint => updateEndpoint(endpoint)));
+        console.log('[InsertEventOnDb] Todos os endpoints foram atualizados com sucesso.');
 
         return etapaId;
 

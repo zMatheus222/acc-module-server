@@ -2,6 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const { Client } = require('pg');
 const iconv = require('iconv-lite'); // Importa a biblioteca iconv-lite
+const { updateEndpoint } = require('./updateEndpoint');
 
 // Função para inserir dados no banco de dados
 async function insertIntoDatabase(sessionData, Event, sessionType) {
@@ -41,19 +42,6 @@ async function insertIntoDatabase(sessionData, Event, sessionType) {
             console.error('[insertIntoDatabase] Nenhum piloto encontrado na tabela base.pilotos');
         }
 
-        /*
-        acc.sessoes:
-        "id"	"etapa_id"	"sessiontype"	"dayofweekend"	"hourofday"	"sessiondurationminutes"	"timemultiplier"
-          1	         1	          "P"	           1	        10             	60	                       1
-          
-        Inserir dados na tabela acc.sessoes e retornar id da sessão inserida
-        const resultSessao = await client.query(
-            `INSERT INTO acc.sessoes (etapa_id, sessiontype, dayofweekend, hourofday, sessiondurationminutes, timemultiplier)
-            VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`, 
-            [parseInt(Event.etapa, 10), sessionType, parseInt(Session.dayOfWeekend, 10), parseInt(Session.hourOfDay, 10), parseInt(Session.sessionDurationMinutes, 10), parseFloat(Session.timeMultiplier)]
-        );
-        */
-
         console.log(`[insertIntoDatabase] Buscando acc.sessão referente a etapa_primary_id: ${etapa_primary_id}...`);
         const resultSessao = await client.query(`SELECT id FROM acc.sessoes WHERE id = ${etapa_primary_id} AND sessiontype = ${sessionType}`);
         
@@ -70,13 +58,7 @@ async function insertIntoDatabase(sessionData, Event, sessionType) {
         for (const result of sessionData.sessionResult.leaderBoardLines) {
 
             console.log('----> piloto: ', result);
-
-            /*
-            acc.resultline:
-            "id_sessao"	 "id_piloto"	"id_classe"	"carmodel"	"lapcount"	"bestlap"	"totaltime"
-                1	          1	           1	        30        	28	      50237	       122676
-            */
-
+            
             // iterar sobre todos os pilotos de base.pilotos com base no steam guid de car.drivers[0].playerId
             // somente inserir o dado de resultado se for o piloto correto
             for (piloto of base_pilotos.rows) {
@@ -91,13 +73,17 @@ async function insertIntoDatabase(sessionData, Event, sessionType) {
 
         }
 
-        console.log('[insertIntoDatabase] Dados do leaderboard inseridos com sucesso!');
+        console.log('[insertIntoDatabase] Dados do leaderboard inseridos com sucesso! Atualizando endpoints');
 
-        // if(sessionType === 'R') {
-        //     console.log(`[${Event.eventId}] Evento finalizado!`);
-        //     await client.end();
-        //     process.exit(0);
-        // }
+        const endpointsToUpdate = [
+            'view_temporadas_resultados_practices',
+            'view_temporadas_resultados_qualys',
+            'view_temporadas_resultados',
+            'view_temporadas_resultados_all',
+        ];
+
+        await Promise.all(endpointsToUpdate.map(endpoint => updateEndpoint(endpoint)));
+        console.log('[insertIntoDatabase] Todos os endpoints foram atualizados com sucesso.');
 
     } catch (err) {
         console.error('Erro ao inserir dados:', err);
