@@ -1,8 +1,9 @@
+const apm = require('./apm');
 const fs = require('fs');
 const path = require('path');
 const { Client } = require('pg');
 const iconv = require('iconv-lite'); // Importa a biblioteca iconv-lite
-const { updateEndpoint } = require('./updateEndpoint');
+const { updateEndpointsWithDelay } = require('./updateEndpoint');
 
 // Função para inserir dados no banco de dados
 async function insertIntoDatabase(sessionData, Event, sessionType) {
@@ -82,7 +83,7 @@ async function insertIntoDatabase(sessionData, Event, sessionType) {
             'view_temporadas_resultados_all',
         ];
 
-        await Promise.all(endpointsToUpdate.map(endpoint => updateEndpoint(endpoint)));
+        await updateEndpointsWithDelay(endpointsToUpdate);
         console.log('[insertIntoDatabase] Todos os endpoints foram atualizados com sucesso.');
 
     } catch (err) {

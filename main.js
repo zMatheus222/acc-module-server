@@ -4,11 +4,12 @@ const fs = require('fs');
 const express = require('express');
 const app = express();
 const cors = require('cors');
+const axios = require('axios');
 const http = require('http');
 const { exec } = require('child_process');
 const { spawn } = require('child_process');
 const { Client } = require('pg');
-const { updateEndpoint } = require('./updateEndpoint');
+const { updateEndpointsWithDelay } = require('./updateEndpoint');
 
 // Middleware para parsing do JSON no corpo da requisição
 app.use(express.json());
@@ -149,56 +150,48 @@ function handleOutput(output, Event) {
     });
 }
 
-async function registerDriversOnEntrylist() {
+async function registerDriversOnEntrylist(serverDir) {
     
     console.log('[registerDriversOnEntrylist] Called!');
 
     try {
 
         const API_URL = process.env.API_URL || "http://185.101.104.129:8084";
+        console.log(`[registerDriversOnEntrylist] Fetching data from: ${API_URL}/piloto_temporada_etapa`);
 
         // esta api faz uma requisição para fazer um select na tabela acc.piloto_temporada_etapa;
-        const [piloto_temporada_etapa] = await Promise.all([
-            app.get(`${API_URL}/piloto_temporada_etapa`),
-        ]);
+        const response = await axios.get(`${API_URL}/piloto_temporada_etapa`);
 
-        if (!Array.isArray(piloto_temporada_etapa.data)) {
-            throw new Error("[registerDriversOnEntrylist] Dados de piloto_temporada_etapa inválidos");
+        console.log('[registerDriversOnEntrylist] API Response status:', response.status);
+        console.log('[registerDriversOnEntrylist] API Response data:', response.data);
+        if (!response.data || !Array.isArray(response.data)) {
+            throw new Error("[registerDriversOnEntrylist] Invalid data received from API");
         }
 
         const EntryListDrivers = {
-            "entries": []
-        };
-
-        for (let i = 0; i < piloto_temporada_etapa.data.length; i++){
-
-            const Dd = piloto_temporada_etapa.data[i];
-
-            const driver_obj = {
-                "drivers": [
-                    {
-                        "firstName": Dd.nome,
-                        "lastName": Dd.sobrenome,
-                        "shortName": Dd.nome_curto,
-                        "nationality": 17,
-                        "driverCategory": 1,
-                        "helmetTemplateKey": 503,
-                        "helmetBaseColor": 17,
-                        "helmetDetailColor": 243,
-                        "helmetMaterialType": 0,
-                        "helmetGlassColor": 0,
-                        "helmetGlassMetallic": 0.0,
-                        "glovesTemplateKey": 200,
-                        "suitTemplateKey": 504,
-                        "suitDetailColor1": 243,
-                        "suitDetailColor2": 341,
-                        "playerID": Dd.steam_guid,
-                        "aiSkill": 100,
-                        "aiAggro": 50,
-                        "aiRainSkill": 50,
-                        "aiConsistency": 50
-                    }
-                ],
+            "entries": response.data.map(Dd => ({
+                "drivers": [{
+                    "firstName": Dd.nome,
+                    "lastName": Dd.sobrenome,
+                    "shortName": Dd.nome_curto,
+                    "nationality": 17, // You might want to map this based on Dd.nacionalidade
+                    "driverCategory": 1,
+                    "helmetTemplateKey": 503,
+                    "helmetBaseColor": 17,
+                    "helmetDetailColor": 243,
+                    "helmetMaterialType": 0,
+                    "helmetGlassColor": 0,
+                    "helmetGlassMetallic": 0.0,
+                    "glovesTemplateKey": 200,
+                    "suitTemplateKey": 504,
+                    "suitDetailColor1": 243,
+                    "suitDetailColor2": 341,
+                    "playerID": Dd.steam_guid,
+                    "aiSkill": 100,
+                    "aiAggro": 50,
+                    "aiRainSkill": 50,
+                    "aiConsistency": 50
+                }],
                 "customCar": "",
                 "raceNumber": Dd.numero_carro,
                 "defaultGridPosition": 7,
@@ -207,22 +200,20 @@ async function registerDriversOnEntrylist() {
                 "isServerAdmin": 0,
                 "overrideCarModelForCustomCar": 1,
                 "configVersion": 1
-            }
+            }))
+        };
 
-            EntryListDrivers.entries.push(driver_obj);
-            
-        }
-
-        console.log(`[registerDriversOnEntrylist] entrylist a ser adicionada: EntryListDrivers: ${EntryListDrivers}`);
+        console.log(`[registerDriversOnEntrylist] entrylist a ser adicionada:`, JSON.stringify(EntryListDrivers, null, 4));
 
         const EntrylistJsonPath = path.join(serverDir, 'cfg', 'entrylist.json');
 
-        const updatedEntrylist = JSON.stringify(EntryListDrivers, null, 4);
+        await fs.promises.writeFile(EntrylistJsonPath, JSON.stringify(EntryListDrivers, null, 4), 'utf-8');
 
-        await fs.promises.writeFile(EntrylistJsonPath, updatedEntrylist, 'utf-8');
+        console.log('[registerDriversOnEntrylist] Entrylist updated successfully');
         
     } catch (err) {
-        console.error('[registerDriversOnEntrylist] Erro ao tentar inserir pilotos na Entrylist: ', err);
+        console.error('[registerDriversOnEntrylist] Erro ao tentar inserir pilotos na Entrylist:', err.message);
+        console.error('[registerDriversOnEntrylist] Error stack:', err.stack);
         throw err;
     }
 }
@@ -347,12 +338,11 @@ async function InsertEventOnDb(Event) {
             'view_temporadas_resultados',
             'view_temporadas_resultados_all',
             'piloto_temporada_etapa',
-            'view_temporadas_etapas_sessoes',
             'ranking_piloto_temporada',
             'ranking_equipe_temporada'
         ];
 
-        await Promise.all(endpointsToUpdate.map(endpoint => updateEndpoint(endpoint)));
+        await updateEndpointsWithDelay(endpointsToUpdate);
         console.log('[InsertEventOnDb] Todos os endpoints foram atualizados com sucesso.');
 
         return etapaId;
@@ -550,7 +540,7 @@ async function makeEventsData(Event) {
     if (startTime > safetyMargin) {
         console.log(`Servidor ${eventId} será iniciado em ${startTime / 1000} segundos`);
         setTimeout( async () => {
-            await registerDriversOnEntrylist();
+            await registerDriversOnEntrylist(serverDir);
             startServer(serverDir, Event);
             sendMessagesToClient(Event);
         }, startTime);
