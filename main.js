@@ -6,7 +6,7 @@ const app = express();
 const cors = require('cors');
 const axios = require('axios');
 const http = require('http');
-const { exec } = require('child_process');
+const { exec, execSync } = require('child_process');
 const { spawn } = require('child_process');
 const { Client } = require('pg');
 const { updateEndpointsWithDelay } = require('./updateEndpoint');
@@ -90,28 +90,35 @@ function calculateStartTime(startDate) {
 
 // Função para executar o script insert_result_on_db.js
 function runInsertResultScript(Event, sessionType) {
+    console.log('[runInsertResultScript] Iniciando...');
 
     const tempFilePath = path.join(__dirname, 'temp_event.json');
+    console.log(`[runInsertResultScript] Caminho do arquivo temporário: ${tempFilePath}`);
 
-    // Salvar o objeto Event em um arquivo temporário
-    fs.writeFileSync(tempFilePath, JSON.stringify(Event));
+    try {
+        // Salvar o objeto Event em um arquivo temporário
+        fs.writeFileSync(tempFilePath, JSON.stringify(Event));
+        console.log('[runInsertResultScript] Arquivo temporário criado com sucesso');
 
-    const command = `node insert_result_on_db.js "${tempFilePath}" ${sessionType} ${etapa_primary_id}`;
-    console.log(`[runInsertResultScript] Executando script >> node insert_result_on_db.js "${tempFilePath}" ${sessionType} ${etapa_primary_id}`);
+        const command = `node insert_result_on_db.js "${tempFilePath}" ${sessionType} ${etapa_primary_id}`;
+        console.log(`[runInsertResultScript] Executando comando: ${command}`);
 
-    exec(command, (error, stdout, stderr) => {
-        if (error) {
-            console.error(`[runInsertResultScript] Erro ao executar o script: ${error.message}`);
-            return;
+        const output = execSync(command, { encoding: 'utf-8' });
+        console.log(`[runInsertResultScript] Saída do script:\n${output}`);
+    } catch (error) {
+        console.error(`[runInsertResultScript] Erro: ${error.message}`);
+        console.error(`[runInsertResultScript] Stack: ${error.stack}`);
+    } finally {
+        // Limpar o arquivo temporário
+        try {
+            fs.unlinkSync(tempFilePath);
+            console.log('[runInsertResultScript] Arquivo temporário removido');
+        } catch (unlinkError) {
+            console.error(`[runInsertResultScript] Erro ao remover arquivo temporário: ${unlinkError.message}`);
         }
+    }
 
-        if (stderr) {
-            console.error(`[runInsertResultScript] Erro de execução: ${stderr}`);
-            return;
-        }
-
-        console.log(`[runInsertResultScript] Saída do script: ${stdout}`);
-    });
+    console.log('[runInsertResultScript] Finalizado');
 }
 
 // Função para gerenciar o envio de mensagens para a fila

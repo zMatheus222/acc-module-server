@@ -5,6 +5,11 @@ const { Client } = require('pg');
 const iconv = require('iconv-lite'); // Importa a biblioteca iconv-lite
 const { updateEndpointsWithDelay } = require('./updateEndpoint');
 
+console.log('Script started with arguments:', process.argv);
+console.log(`tempFilePath: ${tempFilePath}`);
+console.log(`sessionType: ${sessionType}`);
+console.log(`etapa_primary_id: ${etapa_primary_id}`);
+
 // Função para inserir dados no banco de dados
 async function insertIntoDatabase(sessionData, Event, sessionType) {
     
@@ -184,24 +189,25 @@ console.log(`[insert_result_on_db.js] tempFilePath: ${tempFilePath} || sessionTy
 
 if (tempFilePath && sessionType) {
 
-    console.log(`[insert_result_on_db.js] Passed if (${tempFilePath} && ${sessionType})`);
+    console.log(`Attempting to read file: ${tempFilePath}`);
 
     try {
         // Ler o conteúdo do arquivo temporário
         const EventString = fs.readFileSync(tempFilePath, 'utf8');
-        console.log(`[insert_result_on_db.js] EventString: ${EventString}`);
+        console.log(`File contents: ${EventString.substring(0, 100)}...`);
         
         // Desserializa a string JSON para um objeto
         const Event = JSON.parse(EventString);
-        console.log(`[insert_result_on_db.js] Event: ${JSON.stringify(Event)}`);
+        console.log(`Parsed Event: ${JSON.stringify(Event, null, 2)}`);
         
         insertResult(Event, sessionType);
 
         UpdateRedisEndpoint();
         
     } catch (err) {
-        console.error('[insert_result_on_db.js] Erro ao ler ou processar o arquivo:', err.message);
+        console.error('Error reading or processing file:', err);
+        console.error('Error stack:', err.stack);
     }
 } else {
-    console.log('Uso: node insert_result_on_db.js <caminho_do_arquivo_temporario> <sessionType>');
+    console.log('Usage: node insert_result_on_db.js <temp_file_path> <sessionType> <etapa_primary_id>');
 }
