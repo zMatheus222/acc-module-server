@@ -48,7 +48,7 @@ async function insertIntoDatabase(sessionData, Event, sessionType) {
         }
 
         console.log(`[insertIntoDatabase] Executando query para buscar sessão. etapa_primary_id: ${etapa_primary_id}, sessionType: ${sessionType}`);
-        const resultSessao = await client.query(`SELECT id FROM acc.sessoes WHERE etapa_id = ${etapa_primary_id} AND sessiontype = ${sessionType}`);
+        const resultSessao = await client.query(`SELECT id FROM acc.sessoes WHERE etapa_id = $1 AND sessiontype = $2`, [etapa_primary_id, sessionType]);
         console.log(`[insertIntoDatabase] Query executada. Resultado:`, resultSessao.rows);
 
         if (resultSessao.rows.length === 0) {
