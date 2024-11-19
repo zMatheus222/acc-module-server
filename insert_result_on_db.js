@@ -5,11 +5,6 @@ const { Client } = require('pg');
 const iconv = require('iconv-lite'); // Importa a biblioteca iconv-lite
 const { updateEndpointsWithDelay } = require('./updateEndpoint');
 
-console.log('Script started with arguments:', process.argv);
-console.log(`tempFilePath: ${tempFilePath}`);
-console.log(`sessionType: ${sessionType}`);
-console.log(`etapa_primary_id: ${etapa_primary_id}`);
-
 // Função para inserir dados no banco de dados
 async function insertIntoDatabase(sessionData, Event, sessionType) {
     
@@ -184,12 +179,19 @@ async function UpdateRedisEndpoint(){
 
 // Obter o caminho do arquivo e o tipo de sessão dos argumentos
 //const [tempFilePath, sessionType, etapa_primary_id] = process.argv.slice(3);
-const [,, tempFilePath, sessionType, etapa_primary_id] = process.argv;
 
 console.log('Argumentos recebidos:', process.argv);
+
+const [,, tempFilePath, sessionType, etapa_primary_id] = process.argv;
+
 console.log('tempFilePath:', tempFilePath);
 console.log('sessionType:', sessionType);
 console.log('etapa_primary_id:', etapa_primary_id);
+
+if (!tempFilePath || !sessionType || !etapa_primary_id) {
+    console.error('Argumentos insuficientes. Uso: node insert_result_on_db.js <tempFilePath> <sessionType> <etapa_primary_id>');
+    process.exit(1);
+}
 
 console.log(`[insert_result_on_db.js] tempFilePath: ${tempFilePath} || sessionType: ${sessionType} || etapa_primary_id: ${etapa_primary_id}`);
 
