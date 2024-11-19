@@ -9,7 +9,7 @@ const axios = require('axios');
 // Função para inserir dados no banco de dados
 async function insertIntoDatabase(sessionData, Event, sessionType) {
     
-    console.log(`[insertIntoDatabase] Iniciado!\nsessionData:\n${JSON.stringify(sessionData)}\nEvent:\n${JSON.stringify(Event)}`);
+    console.log(`[insertIntoDatabase] Iniciado!\n[insertIntoDatabase] sessionData:\n[insertIntoDatabase] ${JSON.stringify(sessionData)}\n[insertIntoDatabase] Event:\n[insertIntoDatabase] ${JSON.stringify(Event)}`);
     if (sessionData.sessionResult.leaderBoardLines.length === 0) {
         console.log('Arquivo de resultado com leaderBoardLines vazia, ignorando...');
         return;
@@ -44,8 +44,8 @@ async function insertIntoDatabase(sessionData, Event, sessionType) {
             console.error('[insertIntoDatabase] Nenhum piloto encontrado na tabela base.pilotos');
         }
 
-        console.log(`[insertIntoDatabase] Buscando acc.sessão referente a etapa_primary_id: ${etapa_primary_id}...`);
-        const resultSessao = await client.query(`SELECT id FROM acc.sessoes WHERE id = ${etapa_primary_id} AND sessiontype = ${sessionType}`);
+        console.log(`[insertIntoDatabase] Buscando acc.sessao referente a etapa_primary_id: ${etapa_primary_id}...`);
+        const resultSessao = await client.query(`SELECT id FROM acc.sessoes WHERE etapa_id = ${etapa_primary_id} AND sessiontype = ${sessionType}`);
         
         const id_sessao = resultSessao.rows[0].id;
 
