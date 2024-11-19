@@ -8,8 +8,9 @@ const axios = require('axios');
 
 // Função para inserir dados no banco de dados
 async function insertIntoDatabase(sessionData, Event, sessionType) {
+
+    console.log(`[insertIntoDatabase] Iniciado com sessionType: ${sessionType}, etapa_primary_id: ${etapa_primary_id}`);
     
-    console.log(`[insertIntoDatabase] Iniciado!\n[insertIntoDatabase] sessionData:\n[insertIntoDatabase] ${JSON.stringify(sessionData)}\n[insertIntoDatabase] Event:\n[insertIntoDatabase] ${JSON.stringify(Event)}`);
     if (sessionData.sessionResult.leaderBoardLines.length === 0) {
         console.log('Arquivo de resultado com leaderBoardLines vazia, ignorando...');
         return;
@@ -26,7 +27,9 @@ async function insertIntoDatabase(sessionData, Event, sessionType) {
     });
 
     try {
+        console.log('[insertIntoDatabase] Tentando conectar ao banco de dados...');
         await client.connect();
+        console.log('[insertIntoDatabase] Conexão com o banco de dados estabelecida.');
 
         if (!Event.CfgEventFile || !Array.isArray(Event.CfgEventFile.sessions)) {
             console.error('[insertIntoDatabase] CfgEventFile ou sessions indefinido:', JSON.stringify(Event));
@@ -44,11 +47,16 @@ async function insertIntoDatabase(sessionData, Event, sessionType) {
             console.error('[insertIntoDatabase] Nenhum piloto encontrado na tabela base.pilotos');
         }
 
-        console.log(`[insertIntoDatabase] Buscando acc.sessao referente a etapa_primary_id: ${etapa_primary_id}...`);
+        console.log(`[insertIntoDatabase] Executando query para buscar sessão. etapa_primary_id: ${etapa_primary_id}, sessionType: ${sessionType}`);
         const resultSessao = await client.query(`SELECT id FROM acc.sessoes WHERE etapa_id = ${etapa_primary_id} AND sessiontype = ${sessionType}`);
+        console.log(`[insertIntoDatabase] Query executada. Resultado:`, resultSessao.rows);
+
+        if (resultSessao.rows.length === 0) {
+            console.error(`[insertIntoDatabase] Nenhuma sessão encontrada para etapa_id ${etapa_primary_id} e sessiontype ${sessionType}`);
+            return;
+        }
         
         const id_sessao = resultSessao.rows[0].id;
-
         console.log(`[insertIntoDatabase] id da sessão encontrado: ${id_sessao}`);
 
         // Verifique se leaderBoardLines existe e é um array
@@ -88,9 +96,12 @@ async function insertIntoDatabase(sessionData, Event, sessionType) {
         console.log('[insertIntoDatabase] Todos os endpoints foram atualizados com sucesso.');
 
     } catch (err) {
-        console.error('Erro ao inserir dados:', err);
+        console.error('[insertIntoDatabase] Erro:', err);
+        console.error('[insertIntoDatabase] Stack:', err.stack);
     } finally {
+        console.log('[insertIntoDatabase] Fechando conexão com o banco de dados...');
         await client.end();
+        console.log('[insertIntoDatabase] Conexão com o banco de dados fechada.');
     }
 }
 
