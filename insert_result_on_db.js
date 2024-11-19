@@ -183,7 +183,13 @@ async function UpdateRedisEndpoint(){
 };
 
 // Obter o caminho do arquivo e o tipo de sessão dos argumentos
-const [tempFilePath, sessionType, etapa_primary_id] = process.argv.slice(3);
+//const [tempFilePath, sessionType, etapa_primary_id] = process.argv.slice(3);
+const [,, tempFilePath, sessionType, etapa_primary_id] = process.argv;
+
+console.log('Argumentos recebidos:', process.argv);
+console.log('tempFilePath:', tempFilePath);
+console.log('sessionType:', sessionType);
+console.log('etapa_primary_id:', etapa_primary_id);
 
 console.log(`[insert_result_on_db.js] tempFilePath: ${tempFilePath} || sessionType: ${sessionType} || etapa_primary_id: ${etapa_primary_id}`);
 
