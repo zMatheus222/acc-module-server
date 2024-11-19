@@ -1,9 +1,10 @@
-const apm = require('./apm');
+//const apm = require('./apm');
 const fs = require('fs');
 const path = require('path');
 const { Client } = require('pg');
 const iconv = require('iconv-lite'); // Importa a biblioteca iconv-lite
 const { updateEndpointsWithDelay } = require('./updateEndpoint');
+const axios = require('axios');
 
 // Função para inserir dados no banco de dados
 async function insertIntoDatabase(sessionData, Event, sessionType) {
@@ -165,17 +166,17 @@ async function insertResult(Event, sessionType) {
 }
 
 // Função para atualizar o endpoint do redis
-async function UpdateRedisEndpoint(){
-    const options = { hostname: '185.101.104.129', port: 8083, path: '/update_get_eventos', method: 'POST', headers: { 'Content-Type': 'application/json', }};
+// async function UpdateRedisEndpoint(){
+//     const options = { hostname: '185.101.104.129', port: 8083, path: '/update_get_eventos', method: 'POST', headers: { 'Content-Type': 'application/json', }};
 
-    const req = http.request(options, (res) => {
-        let responseData = '';
-        res.on('data', (chunck) => { responseData += chunck });
-        res.on('end', () => { console.log('[UpdateRedisEndpoint] Response:', responseData) });
-    });
+//     const req = http.request(options, (res) => {
+//         let responseData = '';
+//         res.on('data', (chunck) => { responseData += chunck });
+//         res.on('end', () => { console.log('[UpdateRedisEndpoint] Response:', responseData) });
+//     });
 
-    req.on('error', (e) => { console.error(`[UpdateRedisEndpoint] Erro: ${e.message}`); });
-};
+//     req.on('error', (e) => { console.error(`[UpdateRedisEndpoint] Erro: ${e.message}`); });
+// };
 
 // Obter o caminho do arquivo e o tipo de sessão dos argumentos
 //const [tempFilePath, sessionType, etapa_primary_id] = process.argv.slice(3);
@@ -208,9 +209,29 @@ if (tempFilePath && sessionType) {
         const Event = JSON.parse(EventString);
         console.log(`Parsed Event: ${JSON.stringify(Event, null, 2)}`);
         
-        insertResult(Event, sessionType);
+        await insertResult(Event, sessionType);
 
-        UpdateRedisEndpoint();
+        try {
+            await insertResult(Event, sessionType);
+            
+            // Substituir UpdateRedisEndpoint por updateEndpointsWithDelay
+            const endpointsToUpdate = [
+                'get_eventos',
+                'view_temporadas_resultados_practices',
+                'view_temporadas_resultados_qualys',
+                'view_temporadas_resultados',
+                'view_temporadas_resultados_all',
+                'piloto_temporada_etapa',
+                'ranking_piloto_temporada',
+                'ranking_equipe_temporada'
+            ];
+            
+            await updateEndpointsWithDelay(endpointsToUpdate);
+            
+            console.log('[insert_result_on_db] Todos os endpoints foram atualizados com sucesso.');
+        } catch (error) {
+            console.error('Erro ao executar insertResult ou atualizar endpoints:', error);
+        }
         
     } catch (err) {
         console.error('Error reading or processing file:', err);
