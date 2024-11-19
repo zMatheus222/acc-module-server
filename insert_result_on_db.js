@@ -180,19 +180,25 @@ async function UpdateRedisEndpoint(){
 // Obter o caminho do arquivo e o tipo de sessão dos argumentos
 const [tempFilePath, sessionType, etapa_primary_id] = process.argv.slice(3);
 
+console.log(`[insert_result_on_db.js] tempFilePath: ${tempFilePath} || sessionType: ${sessionType} || etapa_primary_id: ${etapa_primary_id}`);
+
 if (tempFilePath && sessionType) {
+
     console.log(`[insert_result_on_db.js] Passed if (${tempFilePath} && ${sessionType})`);
 
     try {
         // Ler o conteúdo do arquivo temporário
         const EventString = fs.readFileSync(tempFilePath, 'utf8');
+        console.log(`[insert_result_on_db.js] EventString: ${EventString}`);
         
         // Desserializa a string JSON para um objeto
         const Event = JSON.parse(EventString);
+        console.log(`[insert_result_on_db.js] Event: ${JSON.stringify(Event)}`);
         
         insertResult(Event, sessionType);
 
         UpdateRedisEndpoint();
+        
     } catch (err) {
         console.error('[insert_result_on_db.js] Erro ao ler ou processar o arquivo:', err.message);
     }

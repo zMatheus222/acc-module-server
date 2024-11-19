@@ -97,21 +97,20 @@ function runInsertResultScript(Event, sessionType) {
     fs.writeFileSync(tempFilePath, JSON.stringify(Event));
 
     const command = `node insert_result_on_db.js "${tempFilePath}" ${sessionType} ${etapa_primary_id}`;
-
-    //console.log(`Executando node insert_result_on_db.js com sessionType: ${sessionType}\nEvent:\n${JSON.stringify(Event)}`);
+    console.log(`[runInsertResultScript] Executando script >> node insert_result_on_db.js "${tempFilePath}" ${sessionType} ${etapa_primary_id}`);
 
     exec(command, (error, stdout, stderr) => {
         if (error) {
-            console.error(`Erro ao executar o script: ${error.message}`);
+            console.error(`[runInsertResultScript] Erro ao executar o script: ${error.message}`);
             return;
         }
 
         if (stderr) {
-            console.error(`Erro de execução: ${stderr}`);
+            console.error(`[runInsertResultScript] Erro de execução: ${stderr}`);
             return;
         }
 
-        console.log(`Saída do script: ${stdout}`);
+        console.log(`[runInsertResultScript] Saída do script: ${stdout}`);
     });
 }
 
@@ -122,19 +121,19 @@ function waitToSendMsg(message, Event) {
             continue;
         }
         else if (msg_f.type === "info" && message.match(new RegExp(msg_f.message))) {
-            console.log('Informação adicionada a Event.QueueMsgs, Mensagem: ', message);
+            console.log('[waitToSendMsg] Informação adicionada a Event.QueueMsgs, Mensagem: ', message);
             Event.QueueMsgs.push(message);
         }
         else if (msg_f.type === "practice_finish" && message.match(new RegExp(msg_f.message))) {
-            console.log(`[${Event.eventId}] Treino Livre Finalizado! Mensagem: `, message);
+            console.log(`[waitToSendMsg] [${Event.eventId}] Treino Livre Finalizado! Mensagem: `, message);
             runInsertResultScript(Event, 'P');
         }
         else if (msg_f.type === "qualy_finish" && message.match(new RegExp(msg_f.message))) {
-            console.log(`[${Event.eventId}] Qualificação Finalizada! Mensagem: `, message);
+            console.log(`[waitToSendMsg] [${Event.eventId}] Qualificação Finalizada! Mensagem: `, message);
             runInsertResultScript(Event, 'Q');
         }
         else if (msg_f.type === "race_finish" && message.match(new RegExp(msg_f.message))) {
-            console.log(`[${Event.eventId}] Corrida Finalizada! Mensagem: `, message);
+            console.log(`[waitToSendMsg] [${Event.eventId}] Corrida Finalizada! Mensagem: `, message);
             runInsertResultScript(Event, 'R');
         }
     }
