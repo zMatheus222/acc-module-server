@@ -196,47 +196,31 @@ if (!tempFilePath || !sessionType || !etapa_primary_id) {
 
 console.log(`[insert_result_on_db.js] tempFilePath: ${tempFilePath} || sessionType: ${sessionType} || etapa_primary_id: ${etapa_primary_id}`);
 
-if (tempFilePath && sessionType) {
-
-    console.log(`Attempting to read file: ${tempFilePath}`);
-
+(async () => {
     try {
-        // Ler o conteúdo do arquivo temporário
         const EventString = fs.readFileSync(tempFilePath, 'utf8');
         console.log(`File contents: ${EventString.substring(0, 100)}...`);
         
-        // Desserializa a string JSON para um objeto
         const Event = JSON.parse(EventString);
         console.log(`Parsed Event: ${JSON.stringify(Event, null, 2)}`);
         
-        await insertResult(Event, sessionType);
-
-        try {
-            await insertResult(Event, sessionType);
-            
-            // Substituir UpdateRedisEndpoint por updateEndpointsWithDelay
-            const endpointsToUpdate = [
-                'get_eventos',
-                'view_temporadas_resultados_practices',
-                'view_temporadas_resultados_qualys',
-                'view_temporadas_resultados',
-                'view_temporadas_resultados_all',
-                'piloto_temporada_etapa',
-                'ranking_piloto_temporada',
-                'ranking_equipe_temporada'
-            ];
-            
-            await updateEndpointsWithDelay(endpointsToUpdate);
-            
-            console.log('[insert_result_on_db] Todos os endpoints foram atualizados com sucesso.');
-        } catch (error) {
-            console.error('Erro ao executar insertResult ou atualizar endpoints:', error);
-        }
+        await insertResult(Event, sessionType, etapa_primary_id);
         
-    } catch (err) {
-        console.error('Error reading or processing file:', err);
-        console.error('Error stack:', err.stack);
+        const endpointsToUpdate = [
+            'get_eventos',
+            'view_temporadas_resultados_practices',
+            'view_temporadas_resultados_qualys',
+            'view_temporadas_resultados',
+            'view_temporadas_resultados_all',
+            'piloto_temporada_etapa',
+            'ranking_piloto_temporada',
+            'ranking_equipe_temporada'
+        ];
+        
+        await updateEndpointsWithDelay(endpointsToUpdate);
+        
+        console.log('[insert_result_on_db] Todos os endpoints foram atualizados com sucesso.');
+    } catch (error) {
+        console.error('Erro ao executar insertResult ou atualizar endpoints:', error);
     }
-} else {
-    console.log('Usage: node insert_result_on_db.js <temp_file_path> <sessionType> <etapa_primary_id>');
-}
+})();
