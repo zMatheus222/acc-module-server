@@ -68,17 +68,30 @@ async function insertIntoDatabase(sessionData, Event, sessionType) {
         for (const result of sessionData.sessionResult.leaderBoardLines) {
 
             console.log('----> piloto: ', result);
+
+            let piloto_encontrado = false;
             
             // iterar sobre todos os pilotos de base.pilotos com base no steam guid de car.drivers[0].playerId
             // somente inserir o dado de resultado se for o piloto correto
             for (piloto of base_pilotos.rows) {
+
+                // Verificar os pilotos 'result.car.drivers[0].playerId' que sobraram (não foram encontrados no 'base_pilotos.rows')
+                // e fazer um console.warn para avisar que o piloto está no arquivo de resultado mas não foi encontrado no base_pilotos.rows
+
+                // verificar
                 if (piloto.id && piloto.steam_guid === result.car.drivers[0].playerId) {
+                    piloto_encontrado = true;
                     await client.query(
                         `INSERT INTO acc.resultline (id_sessao, id_piloto, id_classe, carmodel, lapcount, bestlap, totaltime) 
                         VALUES ($1, $2, $3, $4, $5, $6, $7)`, 
                         [id_sessao, piloto.id, result.car.cupCategory + 1, result.car.carModel, result.timing.lapCount, result.timing.bestLap, result.timing.totalTime]
-                    );       
+                    );
+                    break;
                 }
+            }
+
+            if (!piloto_encontrado) {
+                console.warn(`Aviso: Piloto com steam_guid: ${result.car.drivers[0].playerId} está no arquivo de resultado mas não foi encontrado na base de pilotos.`);
             }
 
         }

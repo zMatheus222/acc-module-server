@@ -64,7 +64,7 @@ async function updateEndpoint(endpoint, retries = 3) {
     }
 }
 
-async function updateEndpointsWithDelay(endpoints, delayMs = 250) {
+async function updateEndpointsWithDelay(endpoints, delayMs = 100) {
     for (const endpoint of endpoints) {
         try {
             await updateEndpoint(endpoint);
