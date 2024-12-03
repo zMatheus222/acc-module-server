@@ -17,7 +17,7 @@ app.use(cors()); // Permite todas as origens
 
 const port = 44000;
 
-const serverProcesses = [];
+const serverProcesses = new Map();
 //let EventsData = [];
 let MessagesFilter;
 
@@ -92,7 +92,7 @@ function calculateStartTime(startDate) {
 function runInsertResultScript(Event, sessionType) {
     console.log('[runInsertResultScript] Iniciando...');
 
-    const tempFilePath = path.join(__dirname, 'temp_event.json');
+    const tempFilePath = path.join(__dirname, `temp_event-${Event.eventId}.json`);
     console.log(`[runInsertResultScript] Caminho do arquivo temporário: ${tempFilePath}`);
 
     try {
@@ -156,11 +156,15 @@ function handleOutput(output, Event) {
     });
 }
 
-async function registerDriversOnEntrylist(serverDir) {
+async function registerDriversOnEntrylist(serverDir, Event) {
     
     console.log('[registerDriversOnEntrylist] Called!');
 
     try {
+
+        if (!Event.etapa_primary_id) {
+            throw new Error("[registerDriversOnEntrylist] Event.etapa_primary_id is not defined");
+        }
 
         const API_URL = process.env.API_URL || "http://185.101.104.129:8084";
         console.log(`[registerDriversOnEntrylist] Fetching data from: ${API_URL}/piloto_temporada_etapa`);
@@ -174,8 +178,11 @@ async function registerDriversOnEntrylist(serverDir) {
             throw new Error("[registerDriversOnEntrylist] Invalid data received from API");
         }
 
+        const filteredData = response.data.filter(Dd => Dd.etapa_id === Event.etapa_primary_id);
+        console.log(`[registerDriversOnEntrylist] Filtered ${filteredData.length} entries for etapa_id: ${Event.etapa_primary_id}`);
+
         const EntryListDrivers = {
-            "entries": response.data.map(Dd => ({
+            "entries": filteredData.map(Dd => ({
                 "drivers": [{
                     "firstName": Dd.nome,
                     "lastName": Dd.sobrenome,
@@ -230,7 +237,13 @@ function startServer(serverDir, Event) {
     console.log(`Iniciando servidor do ACC em ${serverDir}`);
 
     const serverProcess = spawn(exePath, { cwd: serverDir }); // Inicie o executável no diretório do evento
-    serverProcesses.push(serverProcess);
+
+    if(!serverProcesses.has(Event.eventId)){
+        serverProcesses.set(Event.eventId, []); // Se o eventId não existe, cria um novo array
+    }
+    
+    // Adiciona o novo processo ao array existente
+    serverProcesses.get(Event.eventId).push(serverProcess);
 
     // Captura a saída do servidor
     serverProcess.stdout.on('data', (data) => {
@@ -411,53 +424,53 @@ async function createTemporada(client, tn) {
 
 let etapa_primary_id = -1;
 
-async function makeRequest(path) {
+// async function makeRequest(path) {
     
-    return new Promise((resolve, reject) => {
-        const options = {
-            hostname: '185.101.104.129',
-            port: 8083,
-            path: path,
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' }
-        };
+//     return new Promise((resolve, reject) => {
+//         const options = {
+//             hostname: '185.101.104.129',
+//             port: 8083,
+//             path: path,
+//             method: 'POST',
+//             headers: { 'Content-Type': 'application/json' }
+//         };
 
-        const req = http.request(options, (res) => {
-            let responseData = '';
-            res.on('data', (chunk) => { responseData += chunk });
-            res.on('end', () => {
-                console.log(`[UpdateRedisEndpoint] Response for ${path}:`, responseData);
-                resolve(responseData);
-            });
-        });
+//         const req = http.request(options, (res) => {
+//             let responseData = '';
+//             res.on('data', (chunk) => { responseData += chunk });
+//             res.on('end', () => {
+//                 console.log(`[UpdateRedisEndpoint] Response for ${path}:`, responseData);
+//                 resolve(responseData);
+//             });
+//         });
 
-        req.on('error', (e) => {
-            console.error(`[UpdateRedisEndpoint] Erro para ${path}: ${e.message}`);
-            reject(e);
-        });
+//         req.on('error', (e) => {
+//             console.error(`[UpdateRedisEndpoint] Erro para ${path}: ${e.message}`);
+//             reject(e);
+//         });
 
-        req.end(); // Finaliza a requisição
-    });
-}
+//         req.end(); // Finaliza a requisição
+//     });
+// }
 
 // Inicializar o servidor HTTP para gerenciar os clientes WebSocket
 function startHttp() {
     app.use(express.static(path.join(__dirname, 'public')));
 
     // Função para atualizar o endpoint do redis
-    async function UpdateRedisEndpoint() {
-        try {
-            console.log('[UpdateRedisEndpoint] Realizando update nos endpoints');
+    // async function UpdateRedisEndpoint() {
+    //     try {
+    //         console.log('[UpdateRedisEndpoint] Realizando update nos endpoints');
     
-            // Fazendo requisições para dois endpoints
-            await makeRequest('/update_get_eventos');
-            await makeRequest('/update_temporadas'); // Substitua com o caminho do seu segundo endpoint
+    //         // Fazendo requisições para dois endpoints
+    //         //await makeRequest('/update_get_eventos');
+    //         //await makeRequest('/update_temporadas'); // Substitua com o caminho do seu segundo endpoint
     
-            console.log('[UpdateRedisEndpoint] Ambas as requisições foram concluídas');
-        } catch (error) {
-            console.log('[UpdateRedisEndpoint] Exceção => ', error);
-        }
-    }
+    //         console.log('[UpdateRedisEndpoint] Ambas as requisições foram concluídas');
+    //     } catch (error) {
+    //         console.log('[UpdateRedisEndpoint] Exceção => ', error);
+    //     }
+    // }
 
     // Aqui, você cria uma rota para cada eventId
     function createServerMonitor(Event) {
@@ -485,16 +498,16 @@ function startHttp() {
 
                 console.log(`[receive_event] Event: ${JSON.stringify(Event)}\n`);
 
-                etapa_primary_id = await InsertEventOnDb(Event); console.log('passed InsertEventOnDb()');
+                etapa_primary_id = await InsertEventOnDb(Event); console.log('[/receive_event] passed InsertEventOnDb()');
                 if (etapa_primary_id instanceof Error) {
                     throw etapa_primary_id; // Re-throw the error if it's an Error object
                 }
                 if (typeof etapa_primary_id !== 'number' || isNaN(etapa_primary_id)) {
                     throw new Error('InsertEventOnDb falhou em retornar um ID válido');
                 }
-                await UpdateRedisEndpoint(); console.log('passed UpdateRedisEndpoint()');
-                await makeEventsData(Event); console.log('passed makeEventsData()');
-                createServerMonitor(Event); console.log('passed createServerMonitor()');
+                await UpdateRedisEndpoint(); console.log('[/receive_event] passed UpdateRedisEndpoint()');
+                await makeEventsData(Event); console.log('[/receive_event] passed makeEventsData()');
+                createServerMonitor(Event); console.log('[/receive_event] passed createServerMonitor()');
                 res.json({ message: '[/receive_event] evento recebido com sucesso', etapa_primary_id: etapa_primary_id });
             } else {
                 res.json({ error: '[/receive_event] erro ao receber os dados do evento, verifique o JSON' });
@@ -546,7 +559,7 @@ async function makeEventsData(Event) {
     if (startTime > safetyMargin) {
         console.log(`Servidor ${eventId} será iniciado em ${startTime / 1000} segundos`);
         setTimeout( async () => {
-            await registerDriversOnEntrylist(serverDir);
+            await registerDriversOnEntrylist(serverDir, Event);
             startServer(serverDir, Event);
             sendMessagesToClient(Event);
         }, startTime);
