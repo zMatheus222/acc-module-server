@@ -273,7 +273,9 @@ function sendMessagesToClient(Event) {
     }, 300); // Intervalo de 300ms
 }
 
-async function InsertEventOnDb(Event) { await sendTrace("AccModuleServer-ReceiveEvent", "backend_insert_event_on_db_called", "1.3", "success", "[InsertEventOnDb] Inserindo Event no banco acc.Etapas...");
+async function InsertEventOnDb(Event) { 
+    
+    await sendTrace("AccModuleServer-ReceiveEvent", "backend_insert_event_on_db_called", "1.3", "success", "[InsertEventOnDb] Inserindo Event no banco acc.Etapas...");
 
     console.log(`[InsertEventOnDb] Inserindo Event no banco acc.Etapas...`);
 
