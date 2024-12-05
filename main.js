@@ -10,6 +10,7 @@ const { exec, execSync } = require('child_process');
 const { spawn } = require('child_process');
 const { Client } = require('pg');
 const { updateEndpointsWithDelay } = require('./updateEndpoint');
+const { sendTrace } = require('./EasyTraceFunction');
 
 // Middleware para parsing do JSON no corpo da requisição
 app.use(express.json());
@@ -272,32 +273,34 @@ function sendMessagesToClient(Event) {
     }, 300); // Intervalo de 300ms
 }
 
-async function InsertEventOnDb(Event) {
+async function InsertEventOnDb(Event) { await sendTrace("AccModuleServer-ReceiveEvent", "backend_insert_event_on_db_called", "1.3", "success", "[InsertEventOnDb] Inserindo Event no banco acc.Etapas...");
 
     console.log(`[InsertEventOnDb] Inserindo Event no banco acc.Etapas...`);
 
-        const config = JSON.parse(fs.readFileSync('./config.json'));
+    const config = JSON.parse(fs.readFileSync('./config.json')); await sendTrace("AccModuleServer-ReceiveEvent", "backend_insert_created_config", "1.4", "success", "Criada variavel const config");
 
-        const client = new Client({
-            user: config.cfgs.postgresql.user,
-            host: config.cfgs.postgresql.hostaddr,
-            database: config.cfgs.postgresql.dbname,
-            password: config.cfgs.postgresql.password,
-            port: config.cfgs.postgresql.port,
-        });
+    const client = new Client({
+        user: config.cfgs.postgresql.user,
+        host: config.cfgs.postgresql.hostaddr,
+        database: config.cfgs.postgresql.dbname,
+        password: config.cfgs.postgresql.password,
+        port: config.cfgs.postgresql.port,
+    }); await sendTrace("AccModuleServer-ReceiveEvent", "backend_insert_created_pg_client", "1.5", "success", "Criado cliente postgresql");
     
+    let errorMsg = "none";
+
     try {
     
         await client.connect();
-        await client.query('BEGIN');
+        await client.query('BEGIN'); await sendTrace("AccModuleServer-ReceiveEvent", "backend_insert_client_connected_begin", "1.6", "success", "Conectado com client.connect e query BEGIN iniciado");
 
         // se esta criando a temporada o id dela não existe ainda, pegar no returning id.
         let temporada_id = -404;
 
-        if (Event.new_temporada && Event.new_temporada.temporada_nome !== "") {
+        if (Event.new_temporada && Event.new_temporada.temporada_nome !== "") { await sendTrace("AccModuleServer-ReceiveEvent", "backend_insert_nova_temporada_encontrada", "1.7", "success", `[InsertEventOnDb] Encontrado nova temporada: ${Event.new_temporada.temporada_nome}, adicionando ao banco.`);
             console.log(`[InsertEventOnDb] Encontrado nova temporada: ${Event.new_temporada.temporada_nome}, adicionando ao banco.`);
             temporada_id = await createTemporada(client, Event.new_temporada);
-        } else {
+        } else {                                                                await sendTrace("AccModuleServer-ReceiveEvent", "backend_insert_nova_temporada_encontrada", "1.7", "success", `[InsertEventOnDb] Não foi encontrada uma nova temporada, prosseguindo...`);
             temporada_id = Event.temporada;
         }
 
@@ -307,10 +310,15 @@ async function InsertEventOnDb(Event) {
                         Event.multiplicador_pts_etapa, Event.CfgEventFile.ambientTemp, Event.CfgEventFile.cloudLevel, Event.CfgEventFile.rain, Event.CfgEventFile.weatherRandomness,
                         Event.eventRules.mandatoryPitstopCount, Event.eventRules.isMandatoryPitstopTyreChangeRequired, Event.eventRules.isMandatoryPitstopRefuellingRequired,
                         Event.eventRules.isRefuellingTimeFixed, Event.eventRules.tyreSetCount, Event.eventRules.isRefuellingAllowedInRace, Event.etapa_tipo]);
+                
+        await sendTrace("AccModuleServer-ReceiveEvent", "backend_insert_insert_montado", "1.8", "success", `resultEtapaInsert Executada`);
                         
         const etapaId = resultEtapaInsert.rows[0].id;
         if (resultEtapaInsert) {
+            await sendTrace("AccModuleServer-ReceiveEvent", "backend_insert_resultEtapaInsert_ok", "1.9", "success", `[InsertEventOnDb] Evento inserido com sucesso em acc.Etapas, id: ${etapaId}`);
             console.log(`[InsertEventOnDb] Evento inserido com sucesso em acc.Etapas, id: ${etapaId}`);
+        } else {
+            await sendTrace("AccModuleServer-ReceiveEvent", "backend_insert_resultEtapaInsert_ok", "1.9", "error", `[InsertEventOnDb] Erro ao tentar executar resultEtapaInsert`);
         }
 
         const queryLiveTable = `INSERT INTO acc.Temporada_Etapas_Lives (id_temporada, id_etapa, numero_etapa, live_url) VALUES ($1, $2, $3, $4)`;
@@ -318,19 +326,13 @@ async function InsertEventOnDb(Event) {
         // Inserir a url da live na tabela 'acc.Temporada_Etapas_Lives'
         const resultLiveTable = await client.query(queryLiveTable, [temporada_id, etapaId, Event.etapa, Event.live_url]);
         if(resultLiveTable) {
+            await sendTrace("AccModuleServer-ReceiveEvent", "backend_insert_resultLiveTable", "2.0", "success", `[InsertEventOnDb] INSERT INTO acc.Temporada_Etapas_Lives executado com sucesso.`);
             console.log(`[InsertEventOnDb] live_url inserida com sucesso em acc.Temporada_Etapas_Lives`);
+        } else {
+            await sendTrace("AccModuleServer-ReceiveEvent", "backend_insert_resultLiveTable", "2.0", "error", `[InsertEventOnDb] Erro ao executar INSERT INTO acc.Temporada_Etapas_Lives.`);
         }
 
-        //console.log("Tipo e valor dos dados da sessão:");
-        //console.log("resultEtapaInsert:", "typeof:", typeof resultEtapaInsert, "valor:", resultEtapaInsert);
-
         for (session of Event.CfgEventFile.sessions) {
-            // console.log("session.sessionType:", "typeof:", typeof session.sessionType, "valor:", session.sessionType);
-            // console.log("session.dayOfWeekend:", "typeof:", typeof session.dayOfWeekend, "valor:", session.dayOfWeekend);
-            // console.log("session.hourOfDay:", "typeof:", typeof session.hourOfDay, "valor:", session.hourOfDay);
-            // console.log("session.sessionDurationMinutes:", "typeof:", typeof session.sessionDurationMinutes, "valor:", session.sessionDurationMinutes);
-            // console.log("session.timeMultiplier:", "typeof:", typeof session.timeMultiplier, "valor:", session.timeMultiplier);
-            // console.log("session.recompensas_rpo:", "typeof:", typeof session.recompensas_rpo, "valor:", session.recompensas_rpo);
             // inserindo sessões:
             const sessionIdRes = await client.query(
                 `INSERT INTO acc.sessoes (etapa_id, sessiontype, dayofweekend, hourofday, sessiondurationminutes, timemultiplier, recompensas_rpo)
@@ -345,8 +347,12 @@ async function InsertEventOnDb(Event) {
             await client.query(query_Temporada_Etapas_Sessoes, [temporada_id, etapaId, session_id]);
         }
 
+        await sendTrace("AccModuleServer-ReceiveEvent", "backend_insert_for_acc_sessoes", "2.1", "success", `[InsertEventOnDb] for INSERT INTO acc.sessoes executado com sucesso.`);
+
         await client.query('COMMIT');
         console.log(`[InsertEventOnDb] Todas as operações concluídas com sucesso.`);
+
+        await sendTrace("AccModuleServer-ReceiveEvent", "backend_insert_commit_ok", "2.2", "success", `[InsertEventOnDb] COMMIT success.`);
 
         console.log('Atualizando endpoints do redis:');
 
@@ -363,16 +369,24 @@ async function InsertEventOnDb(Event) {
 
         await updateEndpointsWithDelay(endpointsToUpdate);
         console.log('[InsertEventOnDb] Todos os endpoints foram atualizados com sucesso.');
+        
+        await sendTrace("AccModuleServer-ReceiveEvent", "backend_insert_update_endpoints", "2.3", "success", `[InsertEventOnDb] Todos os endpoints foram atualizados com sucesso. returning etapaId: ${etapaId}`);
 
         return etapaId;
 
     } catch (error) {
         await client.query('ROLLBACK'); // Rollback em caso de erro
         console.error('[InsertEventOnDb] Excessão ao tentar inserir: ', error);
+        errorMsg = error.message;
         throw error;
     } finally {
         console.log('[InsertEventOnDb] [finally] Processo concluído com sucesso! fechando conexão...');
         await client.end(); // Fechar a conexão
+        if(errorMsg === "none") {
+            await sendTrace("AccModuleServer-ReceiveEvent", "backend_insert_catch", "2.4", "success", '[InsertEventOnDb] [finally] Processo concluído com sucesso! Conexão fechada.');
+        } else {
+            await sendTrace("AccModuleServer-ReceiveEvent", "backend_insert_catch", "2.4", "error", `[InsertEventOnDb] [finally] Processo concluído com erro: ${errorMsg}`);
+        }
     }
 }
 
@@ -424,53 +438,59 @@ async function createTemporada(client, tn) {
 
 let etapa_primary_id = -1;
 
-// async function makeRequest(path) {
+async function makeRequest(path) {
     
-//     return new Promise((resolve, reject) => {
-//         const options = {
-//             hostname: '185.101.104.129',
-//             port: 8083,
-//             path: path,
-//             method: 'POST',
-//             headers: { 'Content-Type': 'application/json' }
-//         };
+    return new Promise((resolve, reject) => {
+        const options = {
+            hostname: '185.101.104.129',
+            port: 8083,
+            path: path,
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        };
 
-//         const req = http.request(options, (res) => {
-//             let responseData = '';
-//             res.on('data', (chunk) => { responseData += chunk });
-//             res.on('end', () => {
-//                 console.log(`[UpdateRedisEndpoint] Response for ${path}:`, responseData);
-//                 resolve(responseData);
-//             });
-//         });
+        const req = http.request(options, (res) => {
+            let responseData = '';
+            res.on('data', (chunk) => { responseData += chunk });
+            res.on('end', () => {
+                console.log(`[UpdateRedisEndpoint] Response for ${path}:`, responseData);
+                resolve(responseData);
+            });
+        });
 
-//         req.on('error', (e) => {
-//             console.error(`[UpdateRedisEndpoint] Erro para ${path}: ${e.message}`);
-//             reject(e);
-//         });
+        req.on('error', (e) => {
+            console.error(`[UpdateRedisEndpoint] Erro para ${path}: ${e.message}`);
+            reject(e);
+        });
 
-//         req.end(); // Finaliza a requisição
-//     });
-// }
+        req.end(); // Finaliza a requisição
+    });
+}
 
 // Inicializar o servidor HTTP para gerenciar os clientes WebSocket
 function startHttp() {
     app.use(express.static(path.join(__dirname, 'public')));
 
     // Função para atualizar o endpoint do redis
-    // async function UpdateRedisEndpoint() {
-    //     try {
-    //         console.log('[UpdateRedisEndpoint] Realizando update nos endpoints');
+    async function UpdateRedisEndpoint() {
+        
+        await sendTrace("AccModuleServer-ReceiveEvent", "backend_started_updates", "2.7", "success", `[UpdateRedisEndpoint] Called!`);
+
+        try {
+            console.log('[UpdateRedisEndpoint] Realizando update nos endpoints');
     
-    //         // Fazendo requisições para dois endpoints
-    //         //await makeRequest('/update_get_eventos');
-    //         //await makeRequest('/update_temporadas'); // Substitua com o caminho do seu segundo endpoint
-    
-    //         console.log('[UpdateRedisEndpoint] Ambas as requisições foram concluídas');
-    //     } catch (error) {
-    //         console.log('[UpdateRedisEndpoint] Exceção => ', error);
-    //     }
-    // }
+            // Fazendo requisições para dois endpoints
+            await makeRequest('/update_get_eventos');
+            await sendTrace("AccModuleServer-ReceiveEvent", "backend_updated_get_eventos", "2.8", "success", `[UpdateRedisEndpoint] updated: update_get_eventos`);
+
+            await makeRequest('/update_temporadas'); // Substitua com o caminho do seu segundo endpoint
+            await sendTrace("AccModuleServer-ReceiveEvent", "backend_updated_temporadas", "2.9", "success", `[UpdateRedisEndpoint] updated: update_temporadas`);
+            
+            console.log('[UpdateRedisEndpoint] Ambas as requisições foram concluídas');
+        } catch (error) {
+            console.log('[UpdateRedisEndpoint] Exceção => ', error);
+        }
+    }
 
     // Aqui, você cria uma rota para cada eventId
     function createServerMonitor(Event) {
@@ -491,30 +511,59 @@ function startHttp() {
     
     // Endpoint que recebe dados de um evento
     app.post('/receive_event', async (req, res) => {
-        try {
-            if (req.body) {
+
+        let errorMsg = "none";
+
+        try { await sendTrace("AccModuleServer-ReceiveEvent", "backend_first_received", "1.1", "success", "Requisição Recebida no acc-module-server!");
+
+            if (req.body) { await sendTrace("AccModuleServer-ReceiveEvent", "backend_reqbody_if", "1.2", "success", "Req.body ok");
 
                 const Event = req.body;
 
                 console.log(`[receive_event] Event: ${JSON.stringify(Event)}\n`);
 
                 etapa_primary_id = await InsertEventOnDb(Event); console.log('[/receive_event] passed InsertEventOnDb()');
+                
+                
                 if (etapa_primary_id instanceof Error) {
+                    await sendTrace("AccModuleServer-ReceiveEvent", "backend_etapa_primary_id", "2.5", "error", `[/receive_event] Erro ao tentar coletar etapa_primary_id: ${etapa_primary_id.message}`);
                     throw etapa_primary_id; // Re-throw the error if it's an Error object
                 }
                 if (typeof etapa_primary_id !== 'number' || isNaN(etapa_primary_id)) {
+                    await sendTrace("AccModuleServer-ReceiveEvent", "backend_etapa_primary_id", "2.5", "error", `[/receive_event] Erro ao tentar coletar etapa_primary_id: ${etapa_primary_id}`);
                     throw new Error('InsertEventOnDb falhou em retornar um ID válido');
+                } else {
+                    await sendTrace("AccModuleServer-ReceiveEvent", "backend_etapa_primary_id", "2.5", "success", `[/receive_event] InsertEventOnDb Success! etapa_primary_id: ${etapa_primary_id}`);
                 }
+
+                await sendTrace("AccModuleServer-ReceiveEvent", "backend_calling_updates", "2.6", "success", `[/receive_event] Calling await UpdateRedisEndpoint()`);
+
                 await UpdateRedisEndpoint(); console.log('[/receive_event] passed UpdateRedisEndpoint()');
+                await sendTrace("AccModuleServer-ReceiveEvent", "backend_updated_temporadas", "3.0", "success", `[/receive_event] Success on: UpdateRedisEndpoint()`);
+
                 await makeEventsData(Event); console.log('[/receive_event] passed makeEventsData()');
+                await sendTrace("AccModuleServer-ReceiveEvent", "backend_make_events_finished", "3.9", "success", `[makeEventsData] Finalizado`);
+                
                 createServerMonitor(Event); console.log('[/receive_event] passed createServerMonitor()');
+
+                await sendTrace("AccModuleServer-ReceiveEvent", "backend_server_monitor_finished", "4.0", "success", `[makeEventsData] createServerMonitor ended.`);
+
                 res.json({ message: '[/receive_event] evento recebido com sucesso', etapa_primary_id: etapa_primary_id });
             } else {
+                await sendTrace("AccModuleServer-ReceiveEvent", "backend_reqbody_if", "1.2", "error", "[/receive_event] erro ao receber os dados do evento, verifique o JSON");
                 res.json({ error: '[/receive_event] erro ao receber os dados do evento, verifique o JSON' });
             }
         }
         catch (err) {
-            console.log('[/receive_event] Exception: Erro ao tentar receber os dados do evento.');
+            errorMsg = err.message;
+            console.log('[/receive_event] Exception: erro ao tentar receber os dados do evento.');
+        }
+        finally {
+            if (errorMsg === "none") {
+                await sendTrace("AccModuleServer-ReceiveEvent", "backend_server_finished", "4.1", "success", `[makeEventsData] Finished without errors`);
+            } else {
+                await sendTrace("AccModuleServer-ReceiveEvent", "backend_server_finished", "4.1", "error", `[makeEventsData] catch error`);
+            }
         }
 
     });
@@ -529,10 +578,14 @@ async function makeEventsData(Event) {
 
     console.log('[makeEventsData] Iniciado! Event: ', JSON.stringify(Event));
 
+    await sendTrace("AccModuleServer-ReceiveEvent", "backend_make_events_iniciado", "3.1", "success", `[makeEventsData] Iniciado!`);
+
     Event.QueueMsgs = []; // Inicializar fila de mensagens para o evento
     Event.webSocket_clients = []; // Inicializar a lista de clientes conectados via WebSocket
 
     const { eventId, start_date, CfgEventFile, eventRules, settings } = Event;
+
+    await sendTrace("AccModuleServer-ReceiveEvent", "backend_make_events_variables", "3.2", "success", `[makeEventsData] Calling: const { eventId, start_date, CfgEventFile, eventRules, settings } = Event`);
 
     console.log(`\n----> Event Data: ${JSON.stringify(
           { eventId, start_date, CfgEventFile, eventRules, settings },
@@ -542,32 +595,41 @@ async function makeEventsData(Event) {
 
     // 1. Copiar a pasta do servidor base
     const serverDir = await copyServerBase(eventId);
+    await sendTrace("AccModuleServer-ReceiveEvent", "backend_make_events_copy_server_base", "3.3", "success", `[makeEventsData] chamado copyServerBase, serverDir: ${serverDir}`);
 
     // 2. Atualizar o arquivo event.json
     await updateEventJson(serverDir, CfgEventFile);
+    await sendTrace("AccModuleServer-ReceiveEvent", "backend_make_events_update_event_json", "3.4", "success", `[makeEventsData] chamado updateEventJson`);
 
     // 3. Atualizar o arquivo eventRules.json
     await updateEventRules(serverDir, eventRules);
+    await sendTrace("AccModuleServer-ReceiveEvent", "backend_make_events_update_event_rules", "3.5", "success", `[makeEventsData] chamado updateEventRules`);
 
     // 4. Atualizar o arquivo settings.json
     await updateSettings(serverDir, settings);
+    await sendTrace("AccModuleServer-ReceiveEvent", "backend_make_events_update_settings", "3.6", "success", `[makeEventsData] chamado updateSettings`);
 
     // 5. Calcular o tempo de início
     const startTime = calculateStartTime(start_date);
+    await sendTrace("AccModuleServer-ReceiveEvent", "backend_make_events_calculate_start_time", "3.7", "success", `[makeEventsData] chamado calculateStartTime`);
+
     const safetyMargin = 1000;
 
     if (startTime > safetyMargin) {
-        console.log(`Servidor ${eventId} será iniciado em ${startTime / 1000} segundos`);
+        await sendTrace("AccModuleServer-ReceiveEvent", "backend_make_events_check_start_time", "3.8", "success", `[makeEventsData] Servidor ${eventId} será iniciado em ${startTime / 1000} segundos`);
+        console.log(`[makeEventsData] Servidor ${eventId} será iniciado em ${startTime / 1000} segundos`);
         setTimeout( async () => {
-            await registerDriversOnEntrylist(serverDir, Event);
             startServer(serverDir, Event);
             sendMessagesToClient(Event);
+            await registerDriversOnEntrylist(serverDir, Event);
         }, startTime);
     } else {
-        console.log(`A hora de início do evento ${eventId} já passou. Iniciando o servidor imediatamente.`);
+        console.log(`[makeEventsData] A hora de início do evento ${eventId} já passou. Iniciando o servidor imediatamente.`);
         startServer(serverDir, Event);
         sendMessagesToClient(Event);
+        await sendTrace("AccModuleServer-ReceiveEvent", "backend_make_events_check_start_time", "3.8", "success", `[makeEventsData] A hora de início do evento ${eventId} já passou. Iniciando o servidor imediatamente.`);
     }
+
 }
 
 // Iniciar o script
