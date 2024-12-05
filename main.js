@@ -89,6 +89,28 @@ function calculateStartTime(startDate) {
     return eventStartTime - currentTime;
 }
 
+// Esta função permite agendar callbacks para serem executados após longos períodos,
+// superando a limitação de 32 bits do setTimeout padrão.
+function setLongTimeout(callback, delay) {
+    // Define o máximo delay seguro (aproximadamente 24.8 dias em milissegundos)
+    // que pode ser usado com setTimeout sem causar overflow.
+    const max32BitDelay = 2147483647;
+
+    // Verifica se o delay solicitado é maior que o máximo seguro
+    if (delay > max32BitDelay) {
+        // Se for maior, agenda um timeout para o máximo permitido
+        setTimeout(() => {
+            // Quando este timeout for acionado, a função chama a si mesma recursivamente
+            // com o delay restante (delay original menos o máximo já aguardado)
+            setLongTimeout(callback, delay - max32BitDelay);
+        }, max32BitDelay);
+    } else {
+        // Se o delay for menor ou igual ao máximo seguro,
+        // simplesmente agenda o callback com o delay restante
+        setTimeout(callback, delay);
+    }
+}
+
 // Função para executar o script insert_result_on_db.js
 function runInsertResultScript(Event, sessionType) {
     console.log('[runInsertResultScript] Iniciando...');
@@ -620,7 +642,7 @@ async function makeEventsData(Event) {
     if (startTime > safetyMargin) {
         await sendTrace("AccModuleServer-ReceiveEvent", "backend_make_events_check_start_time", "3.8", "success", `[makeEventsData] Servidor ${eventId} será iniciado em ${startTime / 1000} segundos`);
         console.log(`[makeEventsData] Servidor ${eventId} será iniciado em ${startTime / 1000} segundos`);
-        setTimeout( async () => {
+        setLongTimeout(async () => {
             startServer(serverDir, Event);
             sendMessagesToClient(Event);
             await registerDriversOnEntrylist(serverDir, Event);
