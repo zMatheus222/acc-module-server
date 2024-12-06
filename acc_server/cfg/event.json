@@ -33,5 +33,6 @@
     ],
     "simracerWeatherConditions": 0,
     "track": "barcelona",
+    "trackTemp": 20,
     "weatherRandomness": 1
 }
