@@ -24,10 +24,10 @@ const sendTrace = async (flow_name, step_name, step_number, status, description)
             description: td.description
         }
 
-        console.log(`[sendTrace] Enviando trace: `, toSendTraceData);
+        //console.log(`[sendTrace] Enviando trace: `, toSendTraceData);
         
         const response = await axios.post('http://185.101.104.252:43500/api/receive_trace', toSendTraceData);
-        console.log('[sendTrace] Metric sent successfully', response.data);
+        //console.log('[sendTrace] Metric sent successfully', response.data);
     } catch (error) {
         console.error('[sendTrace] Error sending metric:', error);
     }

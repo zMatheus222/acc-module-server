@@ -538,9 +538,13 @@ function startHttp() {
 
         let errorMsg = "none";
 
-        try { await sendTrace("AccModuleServer-ReceiveEvent", "backend_first_received", "1.1", "success", "Requisição Recebida no acc-module-server!");
+        try {
+            
+            await sendTrace("AccModuleServer-ReceiveEvent", "backend_first_received", "1.1", "success", "Requisição Recebida no acc-module-server!");
 
-            if (req.body) { await sendTrace("AccModuleServer-ReceiveEvent", "backend_reqbody_if", "1.2", "success", "Req.body ok");
+            if (req.body) {
+                
+                await sendTrace("AccModuleServer-ReceiveEvent", "backend_reqbody_if", "1.2", "success", "Req.body ok");
 
                 const Event = req.body;
 
@@ -611,11 +615,7 @@ async function makeEventsData(Event) {
 
     await sendTrace("AccModuleServer-ReceiveEvent", "backend_make_events_variables", "3.2", "success", `[makeEventsData] Calling: const { eventId, start_date, CfgEventFile, eventRules, settings } = Event`);
 
-    console.log(`\n----> Event Data: ${JSON.stringify(
-          { eventId, start_date, CfgEventFile, eventRules, settings },
-          null, 2
-        )}`
-    );
+    // console.log(`\n----> Event Data: ${JSON.stringify({ eventId, start_date, CfgEventFile, eventRules, settings }, null, 2)}`);
 
     // 1. Copiar a pasta do servidor base
     const serverDir = await copyServerBase(eventId);
