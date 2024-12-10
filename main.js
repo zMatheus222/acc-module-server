@@ -17,8 +17,7 @@ app.use(express.json());
 app.use(cors()); // Permite todas as origens
 
 const port = 44000;
-
-const config = JSON.parse(fs.readFileSync('./config.json')); await sendTrace("AccModuleServer-ReceiveEvent", "backend_insert_created_config", "1.4", "success", "Criada variavel const config");
+const config = JSON.parse(fs.readFileSync('./config.json'));
 
 const serverProcesses = new Map();
 //let EventsData = [];
@@ -326,6 +325,8 @@ async function InsertEventOnDb(Event) {
     await sendTrace("AccModuleServer-ReceiveEvent", "backend_insert_event_on_db_called", "1.3", "success", "[InsertEventOnDb] Inserindo Event no banco acc.Etapas...");
 
     console.log(`[InsertEventOnDb] Inserindo Event no banco acc.Etapas...`);
+
+    await sendTrace("AccModuleServer-ReceiveEvent", "backend_insert_created_config", "1.4", "success", "Criada variavel const config");
 
     const client = new Client({
         user: config.cfgs.postgresql.user,
