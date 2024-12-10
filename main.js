@@ -661,6 +661,14 @@ function startHttp() {
 
                     await client.query('BEGIN');
 
+                    // Delete from temporada_etapas_lives
+                    await client.query(`
+                        DELETE FROM acc.temporada_etapas_lives
+                        WHERE id_etapa IN (
+                            SELECT id FROM acc.etapas WHERE eventid = $1
+                        );
+                    `, [eventid]);
+
                     // Delete from temporada_etapas_sessoes
                     await client.query(`
                         DELETE FROM acc.temporada_etapas_sessoes
