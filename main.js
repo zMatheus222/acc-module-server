@@ -638,7 +638,6 @@ function startHttp() {
                 });
     
                 await client.connect();
-                await sendTrace("AccModuleServer-ReceiveEvent", "backend_insert_created_pg_client", "1.5", "success", "Criado cliente postgresql");
     
                 try {
                     await client.query('BEGIN');
