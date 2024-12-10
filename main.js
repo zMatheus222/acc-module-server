@@ -22,6 +22,19 @@ const serverProcesses = new Map();
 //let EventsData = [];
 let MessagesFilter;
 
+const eventTimeouts = new Map();
+
+function cancelEventTimeout(eventId) {
+    const timeoutId = eventTimeouts.get(eventId);
+    if (timeoutId) {
+        clearTimeout(timeoutId);
+        eventTimeouts.delete(eventId);
+        console.log(`[cancelEventTimeout] Timeout cancelado para o evento ${eventId}`);
+    } else {
+        console.log(`[cancelEventTimeout] Nenhum timeout encontrado para o evento ${eventId}`);
+    }
+}
+
 // Carregar filtro de mensagens do arquivo JSON
 async function loadMessagesFilter() {
     try {
@@ -89,26 +102,37 @@ function calculateStartTime(startDate) {
     return eventStartTime - currentTime;
 }
 
+
 // Esta função permite agendar callbacks para serem executados após longos períodos,
 // superando a limitação de 32 bits do setTimeout padrão.
-function setLongTimeout(callback, delay) {
+function setLongTimeout(callback, delay, eventId) {
     // Define o máximo delay seguro (aproximadamente 24.8 dias em milissegundos)
     // que pode ser usado com setTimeout sem causar overflow.
     const max32BitDelay = 2147483647;
 
     // Verifica se o delay solicitado é maior que o máximo seguro
-    if (delay > max32BitDelay) {
-        // Se for maior, agenda um timeout para o máximo permitido
-        setTimeout(() => {
-            // Quando este timeout for acionado, a função chama a si mesma recursivamente
-            // com o delay restante (delay original menos o máximo já aguardado)
-            setLongTimeout(callback, delay - max32BitDelay);
-        }, max32BitDelay);
-    } else {
-        // Se o delay for menor ou igual ao máximo seguro,
-        // simplesmente agenda o callback com o delay restante
-        setTimeout(callback, delay);
+    function scheduleTimeout(remainingDelay) {
+        if (remainingDelay > max32BitDelay) {
+            // Se for maior, agenda um timeout para o máximo permitido
+            const timeoutId = setTimeout(() => {
+                // Quando este timeout for acionado, a função chama a si mesma recursivamente
+                // com o delay restante (delay original menos o máximo já aguardado)
+                scheduleTimeout(remainingDelay - max32BitDelay);
+            }, max32BitDelay);
+            eventTimeouts.set(eventId, timeoutId);
+        } else {
+            // Se o delay for menor ou igual ao máximo seguro,
+            // simplesmente agenda o callback com o delay restante
+            const timeoutId = setTimeout(() => {
+                callback();
+                eventTimeouts.delete(eventId);
+            }, remainingDelay);
+            
+            eventTimeouts.set(eventId, timeoutId);
+        }
     }
+
+    scheduleTimeout(delay);
 }
 
 // Função para executar o script insert_result_on_db.js
@@ -596,6 +620,61 @@ function startHttp() {
 
     });
 
+    app.post('/remove_event', async (req, res) => {
+        
+        let errorMsg = "none";
+    
+        try {
+            if (req.body && req.body.eventid) {
+                const eventid = req.body.eventid;
+                console.log(`[remove_event] eventid: ${eventid}`);
+    
+                const client = new Client({
+                    user: config.cfgs.postgresql.user,
+                    host: config.cfgs.postgresql.hostaddr,
+                    database: config.cfgs.postgresql.dbname,
+                    password: config.cfgs.postgresql.password,
+                    port: config.cfgs.postgresql.port,
+                });
+    
+                await client.connect();
+                await sendTrace("AccModuleServer-ReceiveEvent", "backend_insert_created_pg_client", "1.5", "success", "Criado cliente postgresql");
+    
+                try {
+                    await client.query('BEGIN');
+    
+                    const query = `
+                        WITH etapa_info AS (
+                            SELECT id AS etapa_id, eventid
+                            FROM acc.etapas
+                            WHERE eventid = $1
+                        )
+                        DELETE FROM acc.sessoes WHERE etapa_id IN (SELECT etapa_id FROM etapa_info);
+                        DELETE FROM acc.etapas WHERE eventid IN (SELECT eventid FROM etapa_info);
+                    `;
+    
+                    await client.query(query, [eventid]);
+                    await client.query('COMMIT');
+
+                    cancelEventTimeout(eventid);
+    
+                    res.json({ message: `[/remove_event] evento removido com sucesso`, eventid: eventid });
+                } catch (dbError) {
+                    await client.query('ROLLBACK');
+                    throw dbError;
+                } finally {
+                    await client.end();
+                }
+            } else {
+                res.status(400).json({ error: `[/remove_event] erro ao remover evento, eventid não fornecido no corpo da requisição` });
+            }
+        } catch (err) {
+            errorMsg = err.message;
+            console.error('[/remove_event] Exception:', errorMsg);
+            res.status(500).json({ error: `[/remove_event] erro ao tentar remover evento: ${errorMsg}` });
+        }
+    });
+
     app.listen(port, () => {
         console.log(`[acc-module-server] started on port: ${port}`);
     });
@@ -646,7 +725,7 @@ async function makeEventsData(Event) {
             startServer(serverDir, Event);
             sendMessagesToClient(Event);
             await registerDriversOnEntrylist(serverDir, Event);
-        }, startTime);
+        }, startTime, eventId);
     } else {
         console.log(`[makeEventsData] A hora de início do evento ${eventId} já passou. Iniciando o servidor imediatamente.`);
         startServer(serverDir, Event);
