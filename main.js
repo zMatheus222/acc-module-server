@@ -661,15 +661,19 @@ function startHttp() {
 
                     await client.query('BEGIN');
     
-                    const query = `
-                        WITH etapa_info AS (
-                            SELECT id AS etapa_id, eventid
-                            FROM acc.etapas
-                            WHERE eventid = $1
-                        )
-                        DELETE FROM acc.sessoes WHERE etapa_id IN (SELECT etapa_id FROM etapa_info);
-                        DELETE FROM acc.etapas WHERE eventid IN (SELECT eventid FROM etapa_info);
-                    `;
+                    // Delete sessoes
+                    await client.query(`
+                        DELETE FROM acc.sessoes
+                        WHERE etapa_id IN (
+                            SELECT id FROM acc.etapas WHERE eventid = $1
+                        );
+                    `, [eventid]);
+
+                    // Delete etapas
+                    await client.query(`
+                        DELETE FROM acc.etapas
+                        WHERE eventid = $1;
+                    `, [eventid]);
     
                     await client.query(query, [eventid]);
                     await client.query('COMMIT');
