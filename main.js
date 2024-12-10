@@ -640,6 +640,24 @@ function startHttp() {
                 await client.connect();
     
                 try {
+
+                    // verificar se existe resultline na sessão (para não remover)
+
+                    const result = await client.query(`
+                        SELECT
+                            rli.id
+                        FROM
+                            acc.resultline rli
+                        INNER JOIN acc.sessoes ss ON rli.id_sessao = ss.id
+                        INNER JOIN acc.etapas et ON ss.etapa_id = et.id
+                        WHERE et.eventid = $1;
+                    `, [eventid]);
+
+                    if (result.rows > 0) {
+                        console.log(`[/remove_event] Existem linhas de resultado (resultlines) nesta etapa, não é possível remove-la.`);
+                        return res.status(409).json({ error: `[/remove_event] Existem linhas de resultado (resultlines) nesta etapa, não é possível removê-la.` });
+                    }
+
                     await client.query('BEGIN');
     
                     const query = `
