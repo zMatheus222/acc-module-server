@@ -691,7 +691,6 @@ function startHttp() {
                         WHERE eventid = $1;
                     `, [eventid]);
     
-                    await client.query(query, [eventid]);
                     await client.query('COMMIT');
 
                     cancelEventTimeout(eventid);
