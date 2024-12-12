@@ -112,7 +112,7 @@ async function updateSettings(serverDir, Settings) {
     console.log(`[updateSettings] Called! | serverDir: ${serverDir} | Settings: ${JSON.stringify(Settings)}`);
 
     const SettingsJsonPath = path.join(serverDir, 'cfg', 'settings.json');
-
+    
     console.log(`[updateSettings] Called! | SettingsJsonPath: ${SettingsJsonPath}`);
 
     // Sobrescrever arquivo Settings.json
@@ -331,6 +331,7 @@ async function registerDriversOnEntrylist(serverDir, Event) {
 
 // Função para iniciar o servidor e capturar a saída
 function startServer(serverDir, Event) {
+
     const exePath = path.join(__dirname, 'acc_server', 'accServer.exe'); // Caminho do executável do servidor
     console.log(`Iniciando servidor do ACC em ${serverDir}`);
 
@@ -771,6 +772,42 @@ function startHttp() {
     });
 }
 
+async function setConfiguration(serverDir) {
+
+    try {
+
+        console.log(`[setConfiguration] Iniciado!`);
+            
+        // 2. Verificar quantos processos já estão rodando
+        // 3. Com base nisso usar a porta abaixo como inicio + o length de processos
+        // 4. Inserir portToUse no configuration.json "udpPort": 9601, "tcpPort": 9601,
+        // 5. verificar o ponto onde portToUse será pego, provavelmente antes de cada servidor iniciar e a contagem de serverProcesses aumentar
+
+        // porta inicial + tamanho ou seja, quantos processos já estão rodando.
+        const portToUse = 9601 + serverProcesses.size;
+
+        console.log(`[setConfiguration] Definindo porta do serverDir: ${serverDir} como: ${portToUse}`);
+
+        // Criando objeto para inserir no arquivo
+        const UpdatedConfiguration = {
+            "udpPort": portToUse,
+            "tcpPort": portToUse,
+            "maxConnections": 85,
+            "lanDiscovery": 1,
+            "registerToLobby": 1,
+            "configVersion": 1
+        }
+
+        const ConfigurationJsonPath = path.join(serverDir, 'cfg', 'configuration.json');
+
+        await fs.promises.writeFile(ConfigurationJsonPath, UpdatedConfiguration, 'utf-8');
+        console.log(`[setConfiguration] Configuration updated successfully for server in ${serverDir}`);
+
+    } catch (error) {
+        console.error(`[setConfiguration] Error updating configuration: ${error.message}`);
+    }
+};
+
 // Função para iniciar a preparação dos dados de cada evento
 async function makeEventsData(Event) {
 
@@ -813,6 +850,10 @@ async function makeEventsData(Event) {
         //await sendTrace("AccModuleServer-ReceiveEvent", "backend_make_events_check_start_time", "3.8", "success", `[makeEventsData] Servidor ${eventId} será iniciado em ${startTime / 1000} segundos`);
         console.log(`[makeEventsData] Servidor ${eventId} será iniciado em ${startTime / 1000} segundos`);
         setLongTimeout(async () => {
+            
+            // 5. Setar arquivo configuration com porta valida
+            await setConfiguration(serverDir);
+
             startServer(serverDir, Event);
             sendMessagesToClient(Event);
             await registerDriversOnEntrylist(serverDir, Event);
