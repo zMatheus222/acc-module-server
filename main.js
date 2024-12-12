@@ -136,6 +136,25 @@ function setLongTimeout(callback, delay, eventId) {
     scheduleTimeout(delay);
 }
 
+function stopServer(eventId) {
+    console.log(`[stopServer] Tentando fechar processo do eventId: ${eventId}`);
+
+    const process = serverProcesses.get(eventId);
+    if (process) {
+        console.log(`[stopServer] Processo encontrado para eventId: ${eventId}. Enviando sinal SIGTERM.`);
+        process.kill('SIGTERM');
+        
+        console.log(`[stopServer] Sinal SIGTERM enviado. Removendo processo do Map.`);
+        serverProcesses.delete(eventId);
+        
+        console.log(`[stopServer] Processo removido do Map para eventId: ${eventId}`);
+    } else {
+        console.log(`[stopServer] Nenhum processo encontrado para eventId: ${eventId}`);
+    }
+
+    console.log(`[stopServer] Operação de fechamento concluída para eventId: ${eventId}`);
+}
+
 // Função para executar o script insert_result_on_db.js
 function runInsertResultScript(Event, sessionType) {
     console.log('[runInsertResultScript] Iniciando...');
@@ -161,6 +180,10 @@ function runInsertResultScript(Event, sessionType) {
         try {
             fs.unlinkSync(tempFilePath);
             console.log('[runInsertResultScript] Arquivo temporário removido');
+
+            // Fechando processo do servidor
+            if(sessionType === 'R') stopServer(Event.eventId);
+
         } catch (unlinkError) {
             console.error(`[runInsertResultScript] Erro ao remover arquivo temporário: ${unlinkError.message}`);
         }
@@ -285,13 +308,7 @@ function startServer(serverDir, Event) {
     console.log(`Iniciando servidor do ACC em ${serverDir}`);
 
     const serverProcess = spawn(exePath, { cwd: serverDir }); // Inicie o executável no diretório do evento
-
-    if(!serverProcesses.has(Event.eventId)){
-        serverProcesses.set(Event.eventId, []); // Se o eventId não existe, cria um novo array
-    }
-    
-    // Adiciona o novo processo ao array existente
-    serverProcesses.get(Event.eventId).push(serverProcess);
+    serverProcesses.set(Event.eventId, serverProcess); // Se o eventId não existe, cria um novo array
 
     // Captura a saída do servidor
     serverProcess.stdout.on('data', (data) => {
