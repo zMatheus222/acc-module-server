@@ -800,7 +800,7 @@ async function setConfiguration(serverDir) {
 
         const ConfigurationJsonPath = path.join(serverDir, 'cfg', 'configuration.json');
 
-        await fs.promises.writeFile(ConfigurationJsonPath, UpdatedConfiguration, 'utf-8');
+        await fs.promises.writeFile(ConfigurationJsonPath, JSON.stringify(UpdatedConfiguration, null, 4), 'utf-8');
         console.log(`[setConfiguration] Configuration updated successfully for server in ${serverDir}`);
 
     } catch (error) {
