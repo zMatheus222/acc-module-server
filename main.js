@@ -65,6 +65,31 @@ async function copyServerBase(eventId) {
 }
 
 async function updateEventJson(serverDir, sessionDetails) {
+
+
+
+    // garantir valores necessários como number
+    // CfgEventFile: {
+    //     ambientTemp: 17,
+    //     cloudLevel: 0.0,
+    //     configVersion: 1,
+    //     isFixedConditionQualification: 0,
+    //     postQualySeconds: 90,
+    //     postRaceSeconds: 90,
+    //     preRaceWaitingTimeSeconds: 90,
+    //     rain: 0,
+    //     sessionOverTimeSeconds: 90,
+    //     sessions: [
+    //         { dayOfWeekend: 3, hourOfDay: 13, sessionDurationMinutes: 3, sessionType: "P", timeMultiplier: 1, recompensas_rpo: 3 },
+    //         { dayOfWeekend: 3, hourOfDay: 14, sessionDurationMinutes: 3, sessionType: "Q", timeMultiplier: 1, recompensas_rpo: 5 },
+    //         { dayOfWeekend: 3, hourOfDay: 15, sessionDurationMinutes: 3, sessionType: "R", timeMultiplier: 1, recompensas_rpo: 7 },
+    //     ],
+    //     simracerWeatherConditions: 0,
+    //     track: "monza",
+    //     trackTemp: 20,
+    //     weatherRandomness: 1
+    // },
+
     const eventJsonPath = path.join(serverDir, 'cfg', 'event.json');
 
     // Sobrescrever o arquivo event.json com os detalhes da sessão
@@ -74,6 +99,8 @@ async function updateEventJson(serverDir, sessionDetails) {
 
 async function updateEventRules(serverDir, EventRules) {
     const EventRulesJsonPath = path.join(serverDir, 'cfg', 'eventRules.json');
+
+    
 
     // Sobrescrever arquivo eventRules.json
     const updatedEventRules = JSON.stringify(EventRules, null, 2);
@@ -591,10 +618,9 @@ function startHttp() {
 
                 const Event = req.body;
 
-                console.log(`[receive_event] Event: ${JSON.stringify(Event)}\n`);
+                console.log(`[receive_event] Event recebido: `, Event);
 
                 etapa_primary_id = await InsertEventOnDb(Event); console.log('[/receive_event] passed InsertEventOnDb()');
-                
                 
                 if (etapa_primary_id instanceof Error) {
                     //await sendTrace("AccModuleServer-ReceiveEvent", "backend_etapa_primary_id", "2.5", "error", `[/receive_event] Erro ao tentar coletar etapa_primary_id: ${etapa_primary_id.message}`);
