@@ -167,10 +167,10 @@ function stopServer(eventId) {
 
     const process = serverProcesses.get(eventId);
     if (process) {
-        console.log(`[stopServer] Processo encontrado para eventId: ${eventId}. Enviando sinal SIGTERM.`);
-        process.kill('SIGTERM');
+        console.log(`[stopServer] Processo encontrado para eventId: ${eventId}. Enviando sinal SIGKILL.`);
+        process.kill('SIGKILL');
         
-        console.log(`[stopServer] Sinal SIGTERM enviado. Removendo processo do Map.`);
+        console.log(`[stopServer] Sinal SIGKILL enviado. Removendo processo do Map.`);
         serverProcesses.delete(eventId);
         
         console.log(`[stopServer] Processo removido do Map para eventId: ${eventId}`);
