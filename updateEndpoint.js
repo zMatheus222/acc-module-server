@@ -5,6 +5,7 @@ function delay(ms) {
 }
 
 async function updateEndpoint(endpoint, retries = 3) {
+    
     for (let attempt = 0; attempt < retries; attempt++) {
         console.log(`[updateEndpoint] Tentando realizar o update do endpoint: ${endpoint} (Tentativa ${attempt + 1}/${retries})`);
 

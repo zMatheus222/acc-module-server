@@ -20,7 +20,6 @@ const port = 44000;
 const config = JSON.parse(fs.readFileSync('./config.json'));
 
 const serverProcesses = new Map();
-//let EventsData = [];
 let MessagesFilter;
 
 const eventTimeouts = new Map();
@@ -673,7 +672,7 @@ function startHttp() {
         try {
             if (req.body && req.body.eventid) {
                 const eventid = req.body.eventid;
-                console.log(`[remove_event] eventid: ${eventid}`);
+                console.log(`[remove_event] 1.1 Removendo eventid: ${eventid}`);
     
                 const client = new Client({
                     user: config.cfgs.postgresql.user,
@@ -684,10 +683,14 @@ function startHttp() {
                 });
     
                 await client.connect();
+
+                console.log('[remove_event] 1.2 conectado ao banco postgresql, realizando queries');
     
                 try {
 
                     // verificar se existe resultline na sessão (para não remover)
+
+                    console.log('[remove_event] 1.3 Query: SELECT rli.id FROM acc.resultline... para verificar se há resultados neste eventid...');
 
                     const result = await client.query(`
                         SELECT
@@ -700,8 +703,10 @@ function startHttp() {
                     `, [eventid]);
 
                     if (result.rows > 0) {
-                        console.log(`[/remove_event] Existem linhas de resultado (resultlines) nesta etapa, não é possível remove-la.`);
+                        console.log(`[/remove_event] 1.4 Existem linhas de resultado (resultlines) nesta etapa, não é possível remove-la.`);
                         return res.status(409).json({ error: `[/remove_event] Existem linhas de resultado (resultlines) nesta etapa, não é possível removê-la.` });
+                    } else {
+                        console.log('[remove_event] 1.4 Não existem linhas de resultado, prosseguindo...');
                     }
 
                     await client.query('BEGIN');
@@ -738,7 +743,15 @@ function startHttp() {
     
                     await client.query('COMMIT');
 
+                    console.log(`[remove_event] 1.5 COMMIT das queries realizado com sucesso. executando "cancelEventTimeout(${eventid}) "`);
                     cancelEventTimeout(eventid);
+                    
+                    console.log(`[remove_event] 1.6 executando "stopServer(${eventid}) "`);
+                    stopServer(eventid);
+
+                    setTimeout(() => {
+                        console.log(`[remove_event] 1.7 setTimeout 3000...`);
+                    }, 3000);
 
                     const endpointsToUpdate = [
                         'temporada_etapas_lives',
@@ -746,11 +759,14 @@ function startHttp() {
                         'temporada_etapas_sessoes',
                         'get_eventos',
                     ];
-            
+                    
+                    console.log(`[remove_event] 1.8 Realizando "updateEndpointsWithDelay(${endpointsToUpdate})"`);
                     await updateEndpointsWithDelay(endpointsToUpdate);
-                    console.log('[/remove_event] Todos os endpoints foram atualizados com sucesso.');
+
+                    console.log('[/remove_event] 1.9 Todos os endpoints foram atualizados com sucesso.');
     
                     res.json({ message: `[/remove_event] evento removido com sucesso`, eventid: eventid });
+                    
                 } catch (dbError) {
                     await client.query('ROLLBACK');
                     throw dbError;
