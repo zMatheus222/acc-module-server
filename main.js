@@ -561,6 +561,10 @@ async function makeRequest(path) {
     });
 }
 
+async function delay(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
 // Inicializar o servidor HTTP para gerenciar os clientes WebSocket
 function startHttp() {
     app.use(express.static(path.join(__dirname, 'public')));
@@ -749,21 +753,19 @@ function startHttp() {
                     console.log(`[remove_event] 1.6 executando "stopServer(${eventid}) "`);
                     stopServer(eventid);
 
-                    setTimeout(() => {
-                        console.log(`[remove_event] 1.7 setTimeout 3000...`);
-                    }, 3000);
+                    await delay(3000);
 
                     const endpointsToUpdate = [
                         'piloto_temporada_etapa',
                         'get_eventos',
                     ];
                     
-                    console.log(`[remove_event] 1.8 Realizando "updateEndpointsWithDelay(${endpointsToUpdate})"`);
+                    console.log(`[remove_event] 1.7 Realizando "updateEndpointsWithDelay(${endpointsToUpdate})"`);
                     await updateEndpointsWithDelay(endpointsToUpdate);
 
-                    console.log('[/remove_event] 1.9 Todos os endpoints foram atualizados com sucesso.');
+                    console.log('[/remove_event] 1.8 Todos os endpoints foram atualizados com sucesso.');
     
-                    res.json({ message: `[/remove_event] evento removido com sucesso`, eventid: eventid });
+                    res.json({ message: `[/remove_event] 1.9 evento removido com sucesso`, eventid: eventid });
 
                 } catch (dbError) {
                     await client.query('ROLLBACK');
