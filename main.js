@@ -708,7 +708,7 @@ function startHttp() {
 
                     console.log(`[/remove_event] 1.3 result.rows length [${result.rows.length}] : `, result.rows);
 
-                    if (result.rows > 0) {
+                    if (result.rows.length > 0) {
                         console.log(`[/remove_event] 1.4 Existem linhas de resultado (resultlines) nesta etapa, não é possível remove-la.`);
                         return res.status(409).json({ error: `[/remove_event] Existem linhas de resultado (resultlines) nesta etapa, não é possível removê-la.` });
                     } else {
