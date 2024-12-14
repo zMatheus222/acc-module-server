@@ -754,9 +754,7 @@ function startHttp() {
                     }, 3000);
 
                     const endpointsToUpdate = [
-                        'temporada_etapas_lives',
                         'piloto_temporada_etapa',
-                        'temporada_etapas_sessoes',
                         'get_eventos',
                     ];
                     
@@ -766,7 +764,7 @@ function startHttp() {
                     console.log('[/remove_event] 1.9 Todos os endpoints foram atualizados com sucesso.');
     
                     res.json({ message: `[/remove_event] evento removido com sucesso`, eventid: eventid });
-                    
+
                 } catch (dbError) {
                     await client.query('ROLLBACK');
                     throw dbError;
