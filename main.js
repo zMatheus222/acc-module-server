@@ -234,17 +234,17 @@ function waitToSendMsg(message, Event) {
         }
         else if (msg_f.type === "practice_finish" && message.match(new RegExp(msg_f.message))) {
             console.log(`[waitToSendMsg] [${Event.eventId}] Treino Livre Finalizado! Mensagem: `, message);
-            const sessionIndex = Event.CfgEventFile.session.findIndex(session => session.sessionType === "P");
+            const sessionIndex = Event.CfgEventFile.sessions.findIndex(session => session.sessionType === "P");
             runInsertResultScript(Event, 'P', sessionIndex);
         }
         else if (msg_f.type === "qualy_finish" && message.match(new RegExp(msg_f.message))) {
             console.log(`[waitToSendMsg] [${Event.eventId}] Qualificação Finalizada! Mensagem: `, message);
-            const sessionIndex = Event.CfgEventFile.session.findIndex(session => session.sessionType === "Q");
+            const sessionIndex = Event.CfgEventFile.sessions.findIndex(session => session.sessionType === "Q");
             runInsertResultScript(Event, 'Q', sessionIndex);
         }
         else if (msg_f.type === "race_finish" && message.match(new RegExp(msg_f.message))) {
             console.log(`[waitToSendMsg] [${Event.eventId}] Corrida Finalizada! Mensagem: `, message);
-            const sessionIndex = Event.CfgEventFile.session.findIndex(session => session.sessionType === "R");
+            const sessionIndex = Event.CfgEventFile.sessions.findIndex(session => session.sessionType === "R");
             runInsertResultScript(Event, 'R', sessionIndex);
         }
     }
