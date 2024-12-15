@@ -24,7 +24,7 @@
         "type": "info"
     },
     {
-        "message": "Session changed: Practice -> Qualifying 0",
+        "message": "Session changed: Practice -> Qualifying",
         "type": "practice_finish"
     },
     {
