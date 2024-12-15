@@ -182,7 +182,7 @@ function stopServer(eventId) {
 }
 
 // Função para executar o script insert_result_on_db.js
-function runInsertResultScript(Event, sessionType) {
+function runInsertResultScript(Event, sessionType, sessionIndex) {
     console.log('[runInsertResultScript] Iniciando...');
 
     const tempFilePath = path.join(__dirname, `temp_event-${Event.eventId}.json`);
@@ -207,8 +207,11 @@ function runInsertResultScript(Event, sessionType) {
             fs.unlinkSync(tempFilePath);
             console.log('[runInsertResultScript] Arquivo temporário removido');
 
-            // Fechando processo do servidor
-            if(sessionType === 'R') stopServer(Event.eventId);
+            // descobrir se é a ultima sessão para finalizar o servidor independente da ultima sessão ser corrida, qualy treino etc.
+            if(Event.CfgEventFile.lastSessionIndex === sessionIndex) {
+                console.log(`[runInsertResultScript] Última sessão concluída. Finalizando o servidor.`);
+                stopServer(Event.eventId);
+            }
 
         } catch (unlinkError) {
             console.error(`[runInsertResultScript] Erro ao remover arquivo temporário: ${unlinkError.message}`);
@@ -220,6 +223,7 @@ function runInsertResultScript(Event, sessionType) {
 
 // Função para gerenciar o envio de mensagens para a fila
 function waitToSendMsg(message, Event) {
+    
     for (const msg_f of MessagesFilter) {
         if (msg_f.type === "ignore") {
             continue;
@@ -230,15 +234,18 @@ function waitToSendMsg(message, Event) {
         }
         else if (msg_f.type === "practice_finish" && message.match(new RegExp(msg_f.message))) {
             console.log(`[waitToSendMsg] [${Event.eventId}] Treino Livre Finalizado! Mensagem: `, message);
-            runInsertResultScript(Event, 'P');
+            const sessionIndex = Event.CfgEventFile.session.findIndex(session => session.sessionType === "P");
+            runInsertResultScript(Event, 'P', sessionIndex);
         }
         else if (msg_f.type === "qualy_finish" && message.match(new RegExp(msg_f.message))) {
             console.log(`[waitToSendMsg] [${Event.eventId}] Qualificação Finalizada! Mensagem: `, message);
-            runInsertResultScript(Event, 'Q');
+            const sessionIndex = Event.CfgEventFile.session.findIndex(session => session.sessionType === "Q");
+            runInsertResultScript(Event, 'Q', sessionIndex);
         }
         else if (msg_f.type === "race_finish" && message.match(new RegExp(msg_f.message))) {
             console.log(`[waitToSendMsg] [${Event.eventId}] Corrida Finalizada! Mensagem: `, message);
-            runInsertResultScript(Event, 'R');
+            const sessionIndex = Event.CfgEventFile.session.findIndex(session => session.sessionType === "R");
+            runInsertResultScript(Event, 'R', sessionIndex);
         }
     }
 }
