@@ -65,30 +65,6 @@ async function copyServerBase(eventId) {
 
 async function updateEventJson(serverDir, sessionDetails) {
 
-
-
-    // garantir valores necessários como number
-    // CfgEventFile: {
-    //     ambientTemp: 17,
-    //     cloudLevel: 0.0,
-    //     configVersion: 1,
-    //     isFixedConditionQualification: 0,
-    //     postQualySeconds: 90,
-    //     postRaceSeconds: 90,
-    //     preRaceWaitingTimeSeconds: 90,
-    //     rain: 0,
-    //     sessionOverTimeSeconds: 90,
-    //     sessions: [
-    //         { dayOfWeekend: 3, hourOfDay: 13, sessionDurationMinutes: 3, sessionType: "P", timeMultiplier: 1, recompensas_rpo: 3 },
-    //         { dayOfWeekend: 3, hourOfDay: 14, sessionDurationMinutes: 3, sessionType: "Q", timeMultiplier: 1, recompensas_rpo: 5 },
-    //         { dayOfWeekend: 3, hourOfDay: 15, sessionDurationMinutes: 3, sessionType: "R", timeMultiplier: 1, recompensas_rpo: 7 },
-    //     ],
-    //     simracerWeatherConditions: 0,
-    //     track: "monza",
-    //     trackTemp: 20,
-    //     weatherRandomness: 1
-    // },
-
     const eventJsonPath = path.join(serverDir, 'cfg', 'event.json');
 
     // Sobrescrever o arquivo event.json com os detalhes da sessão
@@ -120,6 +96,22 @@ async function updateSettings(serverDir, Settings) {
     console.log(`[updateSettings] Called! | updatedSettings: ${updatedSettings}`);
 
     await fs.promises.writeFile(SettingsJsonPath, updatedSettings, 'utf-8');
+}
+
+async function updateBop(serverDir, bop) {
+
+    console.log(`[updateBop] Called! | serverDir: ${serverDir} | bop: ${JSON.stringify(bop)}`);
+
+    const BopJsonPath = path.join(serverDir, 'cfg', 'bop.json');
+    
+    console.log(`[updateBop] Called! | BopJsonPath: ${BopJsonPath}`);
+
+    // Sobrescrever arquivo bop.json
+    const updatedbop = JSON.stringify(bop, null, 2);
+
+    console.log(`[updateBop] Called! | updatedbop: ${updatedbop}`);
+
+    await fs.promises.writeFile(BopJsonPath, updatedbop, 'utf-8');
 }
 
 // Calcular o tempo restante até o início do evento
@@ -843,7 +835,7 @@ async function makeEventsData(Event) {
     Event.QueueMsgs = []; // Inicializar fila de mensagens para o evento
     Event.webSocket_clients = []; // Inicializar a lista de clientes conectados via WebSocket
 
-    const { eventId, start_date, CfgEventFile, eventRules, settings } = Event;
+    const { eventId, start_date, CfgEventFile, eventRules, settings, bop } = Event;
 
     //await sendTrace("AccModuleServer-ReceiveEvent", "backend_make_events_variables", "3.2", "success", `[makeEventsData] Calling: const { eventId, start_date, CfgEventFile, eventRules, settings } = Event`);
 
@@ -865,7 +857,10 @@ async function makeEventsData(Event) {
     await updateSettings(serverDir, settings);
     //await sendTrace("AccModuleServer-ReceiveEvent", "backend_make_events_update_settings", "3.6", "success", `[makeEventsData] chamado updateSettings`);
 
-    // 5. Calcular o tempo de início
+    // 5. Atualizar arquivo de BoP
+    await updateBop(serverDir, bop);
+
+    // 6. Calcular o tempo de início
     const startTime = calculateStartTime(start_date);
     //await sendTrace("AccModuleServer-ReceiveEvent", "backend_make_events_calculate_start_time", "3.7", "success", `[makeEventsData] chamado calculateStartTime`);
 
