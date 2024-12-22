@@ -875,9 +875,11 @@ async function makeEventsData(Event) {
             // 5. Setar arquivo configuration com porta valida
             await setConfiguration(serverDir);
 
+            // Arquivo de entrylist
+            await registerDriversOnEntrylist(serverDir, Event);
+
             startServer(serverDir, Event);
             sendMessagesToClient(Event);
-            await registerDriversOnEntrylist(serverDir, Event);
         }, startTime, eventId);
     } else {
         console.log(`[makeEventsData] A hora de início do evento ${eventId} já passou. Iniciando o servidor imediatamente.`);
