@@ -2,7 +2,7 @@
     "ambientTemp": 18,
     "cloudLevel": 0.1,
     "configVersion": 1,
-    "isFixedConditionQualification": 0,
+    "isFixedConditionQualification": 1,
     "postQualySeconds": 15,
     "postRaceSeconds": 15,
     "preRaceWaitingTimeSeconds": 30,

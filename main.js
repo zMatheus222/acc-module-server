@@ -309,7 +309,8 @@ async function registerDriversOnEntrylist(serverDir, Event) {
                 "isServerAdmin": 0,
                 "overrideCarModelForCustomCar": 1,
                 "configVersion": 1
-            }))
+            })),
+            "forceEntryList": 1
         };
 
         console.log(`[registerDriversOnEntrylist] entrylist a ser adicionada:`, JSON.stringify(EntryListDrivers, null, 4));
