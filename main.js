@@ -100,7 +100,7 @@ async function updateSettings(serverDir, Settings) {
 
 async function updateBop(serverDir, bop) {
 
-    console.log(`[updateBop] Called! | serverDir: ${serverDir} | bop: ${JSON.stringify(bop)}`);
+    console.log(`[updateBop] Called! | serverDir: ${serverDir}`);
 
     const BopJsonPath = path.join(serverDir, 'cfg', 'bop.json');
     
@@ -260,6 +260,8 @@ async function registerDriversOnEntrylist(serverDir, Event) {
 
         if (!Event.etapa_primary_id) {
             throw new Error("[registerDriversOnEntrylist] Event.etapa_primary_id is not defined");
+        } else {
+            console.log(`[registerDriversOnEntrylist] Event.etapa_primary_id: ${Event.etapa_primary_id}`);
         }
 
         const API_URL = process.env.API_URL || "http://185.101.104.129:8084";
