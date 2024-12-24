@@ -276,7 +276,7 @@ async function registerDriversOnEntrylist(serverDir, Event) {
             throw new Error("[registerDriversOnEntrylist] Invalid data received from API");
         }
 
-        const filteredData = response.data.filter(Dd => Dd.etapa_id == Event.etapa_primary_id);
+        const filteredData = response.data.filter(Dd => Dd.eventid == Event.eventId);
         console.log(`[registerDriversOnEntrylist] Filtered ${filteredData.length} entries for etapa_id: ${Event.etapa_primary_id}`);
 
         const EntryListDrivers = {
