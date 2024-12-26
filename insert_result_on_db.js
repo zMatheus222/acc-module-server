@@ -98,6 +98,10 @@ async function insertIntoDatabase(sessionData, Event, sessionType) {
 
         console.log('[insertIntoDatabase] Dados do leaderboard inseridos com sucesso! Atualizando endpoints');
 
+        // Mudar o status do evento (Event.eventId) para 'Finalizados'
+        await client.query(`UPDATE acc.etapas SET status = 'Finalizados' WHERE eventid = $1`, [Event.eventId]);
+        console.log(`[insertIntoDatabase] Alterado o status do eventId ${Event.eventId} para 'Finalizados' com sucesso!`);
+
         const endpointsToUpdate = [
             'view_temporadas_resultados_practices',
             'view_temporadas_resultados_qualys',
@@ -188,22 +192,6 @@ async function insertResult(Event, sessionType) {
         console.error('[insert_result_on_db] Erro ao ler o arquivo de resultado:', err);
     }
 }
-
-// Função para atualizar o endpoint do redis
-// async function UpdateRedisEndpoint(){
-//     const options = { hostname: '185.101.104.129', port: 8083, path: '/update_get_eventos', method: 'POST', headers: { 'Content-Type': 'application/json', }};
-
-//     const req = http.request(options, (res) => {
-//         let responseData = '';
-//         res.on('data', (chunck) => { responseData += chunck });
-//         res.on('end', () => { console.log('[UpdateRedisEndpoint] Response:', responseData) });
-//     });
-
-//     req.on('error', (e) => { console.error(`[UpdateRedisEndpoint] Erro: ${e.message}`); });
-// };
-
-// Obter o caminho do arquivo e o tipo de sessão dos argumentos
-//const [tempFilePath, sessionType, etapa_primary_id] = process.argv.slice(3);
 
 console.log('Argumentos recebidos:', process.argv);
 
